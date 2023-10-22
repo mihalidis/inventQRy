@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StyleSheet, Platform, SafeAreaView as SafeAreaViewNative } from 'react-native';
 import {useFonts} from "expo-font";
 import {useCallback} from "react";
-import StyledText from './src/components/atoms/StyledText';
+import Screen from './src/Screen';
 
 SplashScreen.preventAutoHideAsync().then();
 const SafeAreaViewComponent = Platform.OS === 'ios' ? SafeAreaViewNative : SafeAreaView
@@ -29,7 +29,7 @@ export default function App() {
 
   return (
     <SafeAreaViewComponent style={styles.containerSafe} onLayout={onLayoutRootView}>
-      <StyledText weight={500} style={styles.headerText}>Hello</StyledText>
+      <Screen />
       <StatusBar style="auto" />
     </SafeAreaViewComponent>
   );
@@ -38,12 +38,6 @@ export default function App() {
 const styles = StyleSheet.create({
   containerSafe: {
     flex: 1,
-    backgroundColor: "#fff"
-  },
-  headerText: {
-    fontSize: 20,
-    color: '#3B1765',
-    textAlign: "left",
-    lineHeight: 28
+    backgroundColor: "#192655"
   }
 });
