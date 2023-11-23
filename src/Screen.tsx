@@ -1,8 +1,11 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import QRCode from 'react-native-qrcode-svg';
+import * as FileSystem from 'expo-file-system';
+import { captureRef } from 'react-native-view-shot';
 import StyledText from './components/atoms/StyledText';
+import { Shelves } from './types/Shelves'
+
 import {
-    Text,
     View,
     StyleSheet,
     TextInput,
@@ -10,19 +13,59 @@ import {
 } from 'react-native';
 
 const App = () => {
-    const [inputText, setInputText] = useState('');
-    const [qrvalue, setQrvalue] = useState('');
+    const [inputText, setInputText] = useState<string>('');
+    const [qrValue, setQrValue] = useState<string>('');
+    const [imageURI, setImageURI] = useState<string>('');
+    const [shelves, setShelves] = useState<Shelves[]>([]);
+    const viewRef = useRef<View>(null);
+
+    const saveQrCode = async () => {
+       await captureView()
+    }
+
+    const createQrCode = async () => {
+        setQrValue(inputText)
+    }
+
+    const captureView = async () => {
+        try {
+            const uri = await captureRef(viewRef, {
+                format: 'png',
+                quality: 1,
+            });
+            const base64Image = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            setImageURI(`'data:image/png;base64,${base64Image}`);
+        } catch (error) {
+            console.error('Error while capturing: ', error);
+        }
+    };
+
+    useEffect(() => {
+        console.log(shelves)
+    }, [shelves])
+
+    useEffect(() => {
+        setShelves(prev => [...prev, {qrCode: imageURI, value: qrValue}])
+    }, [imageURI])
 
     return (
         <View style={styles.container}>
-            <View style={styles.qrWrapper}>
-                <QRCode
-                    value={qrvalue ? qrvalue : 'NA'}
+            <View style={styles.qrWrapper} ref={viewRef}>
+                {qrValue && <QRCode
+                    value={qrValue}
                     size={250}
                     color="#192655"
-                    backgroundColor="#F3F0CA"
-                />
+                />}
             </View>
+            {
+                qrValue && <TouchableOpacity
+                style={styles.buttonStyle}
+                onPress={() => saveQrCode()}>
+                <StyledText weight={500} style={styles.buttonTextStyle}>Save QR Code</StyledText>
+              </TouchableOpacity>
+            }
             <StyledText weight={500} style={styles.textStyle}>Please insert any value to generate QR code</StyledText>
             <TextInput
                 style={styles.textInputStyle}
@@ -34,7 +77,7 @@ const App = () => {
             />
             <TouchableOpacity
                 style={styles.buttonStyle}
-                onPress={() => setQrvalue(inputText)}>
+                onPress={() => createQrCode()}>
                 <StyledText weight={500} style={styles.buttonTextStyle}>Generate QR Code</StyledText>
             </TouchableOpacity>
         </View>
@@ -90,4 +133,10 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         fontSize: 16,
     },
+    logo: {
+        backgroundColor: '#001B79',
+        color: '#fff',
+        padding: 8,
+        borderRadius: 12
+    }
 });
