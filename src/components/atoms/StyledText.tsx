@@ -1,21 +1,18 @@
-import {StyleProp, Text, TextStyle} from "react-native";
-import {ReactNode} from "react";
+import { Text, TextProps } from "react-native";
 
-type StyledTextProps = {
-  children: ReactNode
-  style?: StyleProp<TextStyle>
-  weight?: 400 | 500 | 600 | 900
-}
+type StyledTextProps = TextProps & {
+  weight?: 400 | 500 | 600 | 900;
+};
 
 const fontFamilies = {
   400: "SometypeMono-Regular",
   500: "SometypeMono-Medium",
   600: "SometypeMono-SemiBold",
-  900: "SometypeMono-Bold"
-}
+  900: "SometypeMono-Bold",
+};
 
-const StyledText = (props: StyledTextProps) => {
-  return <Text style={[{fontFamily: fontFamilies[props.weight || 400]}, props.style && props.style]}>{props.children}</Text>
-}
+const StyledText = ({ weight = 400, style, ...rest }: StyledTextProps) => {
+  return <Text style={[{ fontFamily: fontFamilies[weight] }, style]} {...rest} />;
+};
 
-export default StyledText
+export default StyledText;

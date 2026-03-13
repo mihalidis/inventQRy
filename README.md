@@ -2,7 +2,7 @@
 
 InventQRy is a React Native project that aims to simplify home organization. It utilizes QR codes placed on shelves and within closets to enable users to effortlessly add or remove items associated with those codes. With this app, you can easily locate items by scanning the QR codes to identify which shelf they belong to.
 
-![](https://i.ibb.co/nmNLskM/Ekran-g-r-nt-s-2023-11-23-223543.png)
+![](https://ibb.co/mrRLCZWd)
 
 ## Table of contents
 
