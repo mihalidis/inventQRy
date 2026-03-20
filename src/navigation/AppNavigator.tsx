@@ -1,11 +1,12 @@
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList, BottomTabParamList } from '../types/inventory';
+import { RootStackParamList, BottomTabParamList, AuthStackParamList } from '../types/inventory';
 import { Colors, Typography } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import ScanScreen from '../screens/ScanScreen';
@@ -16,8 +17,11 @@ import AddShelfScreen from '../screens/AddShelfScreen';
 import ShelfCreatedQRScreen from '../screens/ShelfCreatedQRScreen';
 import SearchScreen from '../screens/SearchScreen';
 import PrintQRScreen from '../screens/PrintQRScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
@@ -57,22 +61,53 @@ function MainTabs() {
   );
 }
 
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+function AppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="ShelfDetail" component={ShelfDetailScreen} />
+      <Stack.Screen name="AddShelf" component={AddShelfScreen} />
+      <Stack.Screen name="ShelfCreatedQR" component={ShelfCreatedQRScreen} />
+      <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="PrintQR" component={PrintQRScreen} />
+    </Stack.Navigator>
+  );
+}
+
 export default function AppNavigator() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.PrimaryBlue} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen name="ShelfDetail" component={ShelfDetailScreen} />
-        <Stack.Screen name="AddShelf" component={AddShelfScreen} />
-        <Stack.Screen name="ShelfCreatedQR" component={ShelfCreatedQRScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} />
-        <Stack.Screen name="PrintQR" component={PrintQRScreen} />
-      </Stack.Navigator>
+      {user ? <AppStack /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.Background,
+  },
   tabBar: {
     backgroundColor: Colors.Background,
     borderTopColor: Colors.Border,

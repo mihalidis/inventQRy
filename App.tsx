@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { useCallback } from 'react';
 import { View } from 'react-native';
+import { AuthProvider } from './src/context/AuthContext';
 import { InventoryProvider } from './src/context/InventoryContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
@@ -30,10 +31,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <InventoryProvider>
-          <AppNavigator />
-          <StatusBar style="dark" />
-        </InventoryProvider>
+        <AuthProvider>
+          <InventoryProvider>
+            <AppNavigator />
+            <StatusBar style="dark" />
+          </InventoryProvider>
+        </AuthProvider>
       </View>
     </SafeAreaProvider>
   );

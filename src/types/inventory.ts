@@ -14,6 +14,11 @@ export interface Shelf {
   qrCode: string;
 }
 
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+};
+
 export type RootStackParamList = {
   MainTabs: undefined;
   ShelfDetail: { shelfId: string };
