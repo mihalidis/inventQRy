@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
   View,
-  StyleSheet,
+  Text,
   TextInput,
+  StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -10,9 +11,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import StyledText from '../components/atoms/StyledText';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Header from '../components/Header';
 import { useInventory } from '../hooks/useInventory';
 import { RootStackParamList } from '../types/inventory';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,130 +31,138 @@ export default function AddShelfScreen() {
   const handleSubmit = useCallback(() => {
     if (!isValid) return;
     const shelf = addShelf(name.trim(), location.trim());
-    navigation.replace('ShelfDetail', { shelfId: shelf.id });
+    navigation.replace('ShelfCreatedQR', { shelfId: shelf.id });
   }, [isValid, name, location, addShelf, navigation]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.iconContainer}>
-          <StyledText weight={600} style={styles.icon}>📦</StyledText>
-        </View>
-        <StyledText weight={600} style={styles.heading}>
-          Create a New Shelf
-        </StyledText>
-        <StyledText style={styles.subheading}>
-          Give your shelf a name and location. A QR code will be generated automatically.
-        </StyledText>
+    <View style={styles.container}>
+      <Header
+        showBack
+        title="Yeni Raf Oluştur"
+        onBack={() => navigation.goBack()}
+      />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.iconContainer}>
+            <MaterialCommunityIcons
+              name="package-variant-closed"
+              size={40}
+              color={Colors.PrimaryBlue}
+            />
+          </View>
 
-        <View style={styles.field}>
-          <StyledText weight={500} style={styles.label}>Shelf Name</StyledText>
+          <Text style={styles.heading}>Yeni Raf Oluştur</Text>
+          <Text style={styles.subheading}>
+            Rafınıza bir isim ve konum verin. QR kodu otomatik oluşturulacak.
+          </Text>
+
+          <Text style={styles.label}>Raf Adı</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Kitchen Cabinet"
-            placeholderTextColor="#B0B5BD"
+            placeholder="örn: Kitaplık"
+            placeholderTextColor={Colors.GrayText}
             value={name}
             onChangeText={setName}
             autoFocus
           />
-        </View>
 
-        <View style={styles.field}>
-          <StyledText weight={500} style={styles.label}>Location</StyledText>
+          <Text style={styles.label}>Konum</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Kitchen, 2nd Floor"
-            placeholderTextColor="#B0B5BD"
+            placeholder="örn: Salon, 2. Kat"
+            placeholderTextColor={Colors.GrayText}
             value={location}
             onChangeText={setLocation}
           />
-        </View>
 
-        <TouchableOpacity
-          style={[styles.button, !isValid && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={!isValid}
-          activeOpacity={0.7}
-        >
-          <StyledText weight={600} style={styles.buttonText}>
-            Create Shelf
-          </StyledText>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <TouchableOpacity
+            style={[styles.button, !isValid && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={!isValid}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>Oluştur</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.Background,
   },
   content: {
-    padding: 24,
-    paddingTop: 32,
+    padding: Spacing.ScreenPadding,
+    paddingTop: 24,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#EEF2FF',
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: Colors.SecondaryWhite,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 16,
-  },
-  icon: {
-    fontSize: 28,
+    marginBottom: 18,
   },
   heading: {
-    fontSize: 22,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.sizes.xl,
+    color: Colors.DarkText,
     textAlign: 'center',
     marginBottom: 6,
   },
   subheading: {
-    fontSize: 13,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
     textAlign: 'center',
     marginBottom: 32,
     paddingHorizontal: 8,
   },
-  field: {
-    marginBottom: 20,
-  },
   label: {
-    fontSize: 13,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.sm,
+    color: Colors.DarkText,
     marginBottom: 8,
   },
   input: {
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
-    backgroundColor: '#FFFFFF',
+    height: 50,
+    borderRadius: Radius.Input,
+    backgroundColor: Colors.InputBg,
     paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#2A3342',
-    fontFamily: 'SometypeMono-Regular',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.md,
+    color: Colors.DarkText,
+    marginBottom: 20,
   },
   button: {
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#4A7BF7',
+    height: 52,
+    borderRadius: Radius.Button,
+    backgroundColor: Colors.PrimaryBlue,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 12,
+    shadowColor: Colors.PrimaryBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.Background,
+    fontSize: Typography.sizes.md,
   },
 });

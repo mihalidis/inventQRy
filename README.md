@@ -7,7 +7,7 @@ InventQRy is a React Native project that aims to simplify home organization. It 
 ## Table of contents
 
 - [Overview](#overview)
-    - [Screenshot](#screenshot)
+  - [Screenshot](#screenshot)
 - [Built with](#built-with)
 - [Author](#author)
 - [Project Setup](#Project-Setup)
@@ -28,12 +28,45 @@ Make home organization easier by using QR codes in closets and on shelves with I
 
 - Twitter - [@miihalidis](https://twitter.com/Miihalidis)
 
-
 ## Project Setup
 
 ```sh
 npm install
 ```
+
+### iOS Simulator'da Calistirma
+
+1. Mac'te Xcode ve iOS Simulator kurulu olmali.
+2. Bagimliliklari yukleyin:
+
+```sh
+npm install
+```
+
+3. Projeyi iOS simulator'da baslatin:
+
+```sh
+npm run ios
+```
+
+Alternatif olarak `npm start` calistirdiktan sonra terminalde `i` tusuna basarak da iOS simulator'u acabilirsiniz.
+
+### Android Emulator'da Calistirma
+
+1. Android Studio ve Android Emulator kurulu olmali.
+2. Bagimliliklari yukleyin:
+
+```sh
+npm install
+```
+
+3. Projeyi Android emulator'da baslatin:
+
+```sh
+npm run android
+```
+
+Alternatif olarak `npm start` calistirdiktan sonra terminalde `a` tusuna basarak da Android emulator'u acabilirsiniz.
 
 ### Compile and Hot-Reload for Development
 

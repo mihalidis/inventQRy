@@ -1,8 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, TextInput, FlatList } from 'react-native';
-import StyledText from '../components/atoms/StyledText';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import Header from '../components/Header';
+import SearchBar from '../components/SearchBar';
 import { useInventory } from '../hooks/useInventory';
-import { Item, Shelf } from '../types/inventory';
+import { RootStackParamList, Item, Shelf } from '../types/inventory';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface SearchResult {
   item: Item;
@@ -10,57 +17,70 @@ interface SearchResult {
 }
 
 export default function SearchScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const { searchItems } = useInventory();
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => searchItems(query), [query, searchItems]);
 
-  const renderResult = ({ item: result }: { item: SearchResult }) => (
-    <View style={styles.resultCard}>
-      <StyledText weight={600} style={styles.itemName}>
-        {result.item.name}
-      </StyledText>
-      {result.item.description ? (
-        <StyledText style={styles.description} numberOfLines={1}>
-          {result.item.description}
-        </StyledText>
-      ) : null}
-      <View style={styles.shelfInfo}>
-        <StyledText weight={500} style={styles.shelfName}>
-          {result.shelf.name}
-        </StyledText>
-        <StyledText style={styles.shelfLocation}>
-          {result.shelf.location}
-        </StyledText>
-      </View>
-    </View>
-  );
+  const renderResult = ({ item: result }: { item: SearchResult }) => {
+    const dateStr = new Date(result.item.dateAdded).toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'short',
+    });
+
+    return (
+      <TouchableOpacity
+        style={styles.resultCard}
+        onPress={() => navigation.navigate('ShelfDetail', { shelfId: result.shelf.id })}
+        activeOpacity={0.7}
+      >
+        <View style={styles.resultContent}>
+          <Text style={styles.itemName}>{result.item.name}</Text>
+          {result.item.description ? (
+            <Text style={styles.description} numberOfLines={1}>
+              {result.item.description}
+            </Text>
+          ) : null}
+          <View style={styles.meta}>
+            <View style={styles.shelfTag}>
+              <Text style={styles.shelfName}>{result.shelf.name}</Text>
+            </View>
+            <Text style={styles.location}>{result.shelf.location}</Text>
+            <Text style={styles.date}>{dateStr}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search for items..."
-          placeholderTextColor="#B0B5BD"
+      <Header
+        showBack
+        title="Search"
+        onBack={() => navigation.goBack()}
+      />
+
+      <View style={{ marginBottom: 12 }}>
+        <SearchBar
           value={query}
           onChangeText={setQuery}
-          autoFocus
-          autoCapitalize="none"
+          placeholder="Search for items..."
         />
       </View>
 
       {query.trim() && results.length === 0 ? (
         <View style={styles.emptyState}>
-          <StyledText style={styles.emptyText}>
-            No items found for "{query}"
-          </StyledText>
+          <Text style={styles.emptyText}>No items found for "{query}"</Text>
         </View>
       ) : !query.trim() ? (
         <View style={styles.emptyState}>
-          <StyledText style={styles.emptyText}>
+          <Ionicons name="search" size={48} color={Colors.Border} />
+          <Text style={styles.emptyTitle}>Search items</Text>
+          <Text style={styles.emptyText}>
             Type to search across all your shelves
-          </StyledText>
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -78,68 +98,78 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
-  searchContainer: {
-    padding: 20,
-    paddingBottom: 12,
-  },
-  searchInput: {
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#2A3342',
-    fontFamily: 'SometypeMono-Regular',
+    backgroundColor: Colors.Background,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.ScreenPadding,
     paddingBottom: 20,
   },
   resultCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: Colors.SecondaryWhite,
+    borderRadius: Radius.Card,
     padding: 14,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resultContent: {
+    flex: 1,
   },
   itemName: {
-    fontSize: 15,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.md,
+    color: Colors.DarkText,
     marginBottom: 2,
   },
   description: {
-    fontSize: 13,
-    color: '#8E9196',
-    marginBottom: 8,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
+    marginBottom: 6,
   },
-  shelfInfo: {
+  meta: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F2F5',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  shelfTag: {
+    backgroundColor: Colors.Background,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   shelfName: {
-    fontSize: 12,
-    color: '#4A7BF7',
-    marginRight: 8,
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.xs,
+    color: Colors.PrimaryBlue,
   },
-  shelfLocation: {
-    fontSize: 12,
-    color: '#8E9196',
+  location: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.xs,
+    color: Colors.GrayText,
+  },
+  date: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.xs,
+    color: Colors.GrayText,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 80,
+  },
+  emptyTitle: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.lg,
+    color: Colors.DarkText,
+    marginTop: 12,
+    marginBottom: 4,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
   },
 });

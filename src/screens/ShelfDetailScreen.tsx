@@ -1,20 +1,22 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   FlatList,
-  TextInput,
   TouchableOpacity,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import StyledText from '../components/atoms/StyledText';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
+import Header from '../components/Header';
 import ItemCard from '../components/ItemCard';
+import AddItemModal from '../components/AddItemModal';
 import { useInventory } from '../hooks/useInventory';
 import { RootStackParamList, Item } from '../types/inventory';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 
 type ScreenRoute = RouteProp<RootStackParamList, 'ShelfDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -22,52 +24,39 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function ShelfDetailScreen() {
   const route = useRoute<ScreenRoute>();
   const navigation = useNavigation<NavigationProp>();
-  const { getShelfById, addItemToShelf, removeItemFromShelf, removeShelf } = useInventory();
+  const { getShelfById, addItemToShelf, removeItemFromShelf } = useInventory();
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const shelf = getShelfById(route.params.shelfId);
-
-  const [itemName, setItemName] = useState('');
-  const [itemDescription, setItemDescription] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  const handleAddItem = useCallback(() => {
-    if (!shelf || !itemName.trim()) return;
-    addItemToShelf(shelf.id, itemName.trim(), itemDescription.trim());
-    setItemName('');
-    setItemDescription('');
-    setShowForm(false);
-  }, [shelf, itemName, itemDescription, addItemToShelf]);
 
   const handleDeleteItem = useCallback(
     (itemId: string) => {
       if (!shelf) return;
       Alert.alert('Remove Item', 'Are you sure you want to remove this item?', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => removeItemFromShelf(shelf.id, itemId) },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeItemFromShelf(shelf.id, itemId),
+        },
       ]);
     },
     [shelf, removeItemFromShelf]
   );
 
-  const handleDeleteShelf = useCallback(() => {
-    if (!shelf) return;
-    Alert.alert('Delete Shelf', `Delete "${shelf.name}" and all its items?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          removeShelf(shelf.id);
-          navigation.goBack();
-        },
-      },
-    ]);
-  }, [shelf, removeShelf, navigation]);
+  const handleAddItem = useCallback(
+    (name: string, description: string) => {
+      if (!shelf) return;
+      addItemToShelf(shelf.id, name, description);
+      setShowAddModal(false);
+    },
+    [shelf, addItemToShelf]
+  );
 
   if (!shelf) {
     return (
-      <View style={styles.centered}>
-        <StyledText weight={500} style={styles.notFound}>Shelf not found</StyledText>
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.notFoundText}>Shelf not found</Text>
       </View>
     );
   }
@@ -76,217 +65,235 @@ export default function ShelfDetailScreen() {
     <ItemCard item={item} onDelete={handleDeleteItem} />
   );
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.infoSection}>
-        <View style={styles.infoRow}>
-          <View style={styles.infoBlock}>
-            <StyledText style={styles.label}>Location</StyledText>
-            <StyledText weight={500} style={styles.value}>{shelf.location}</StyledText>
+  const ListHeader = () => (
+    <View>
+      {/* Shelf Info Card */}
+      <View style={styles.infoCard}>
+        <View style={styles.infoTop}>
+          <View style={styles.shelfIconContainer}>
+            <MaterialCommunityIcons
+              name="package-variant-closed"
+              size={28}
+              color={Colors.PrimaryBlue}
+            />
           </View>
-          <View style={styles.infoBlock}>
-            <StyledText style={styles.label}>Items</StyledText>
-            <StyledText weight={500} style={styles.value}>{shelf.items.length}</StyledText>
+          <View style={styles.infoDetails}>
+            <Text style={styles.shelfName}>{shelf.name}</Text>
+            <Text style={styles.shelfLocation}>{shelf.location}</Text>
           </View>
         </View>
+
+        {/* QR Preview */}
+        <View style={styles.qrPreview}>
+          <QRCode
+            value={shelf.qrCode}
+            size={80}
+            color={Colors.DarkText}
+            backgroundColor={Colors.Background}
+          />
+        </View>
+
+        {/* Action Buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity
-            style={styles.qrButton}
+            style={styles.printQRBtn}
             onPress={() => navigation.navigate('PrintQR', { shelfId: shelf.id })}
             activeOpacity={0.7}
           >
-            <StyledText weight={600} style={styles.qrButtonText}>View QR</StyledText>
+            <MaterialCommunityIcons name="qrcode" size={18} color={Colors.Background} />
+            <Text style={styles.printQRText}>Print QR</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.deleteShelfButton}
-            onPress={handleDeleteShelf}
+            style={styles.addItemBtn}
+            onPress={() => setShowAddModal(true)}
             activeOpacity={0.7}
           >
-            <StyledText weight={600} style={styles.deleteShelfText}>Delete Shelf</StyledText>
+            <Ionicons name="add" size={18} color={Colors.Background} />
+            <Text style={styles.addItemText}>Add Item</Text>
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Items Header */}
       <View style={styles.itemsHeader}>
-        <StyledText weight={600} style={styles.itemsTitle}>Items</StyledText>
-        <TouchableOpacity onPress={() => setShowForm((v) => !v)}>
-          <StyledText weight={600} style={styles.addItemButton}>
-            {showForm ? 'Cancel' : '+ Add Item'}
-          </StyledText>
-        </TouchableOpacity>
+        <Text style={styles.itemsTitle}>Items ({shelf.items.length})</Text>
       </View>
+    </View>
+  );
 
-      {showForm && (
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Item name"
-            placeholderTextColor="#B0B5BD"
-            value={itemName}
-            onChangeText={setItemName}
-            autoFocus
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Description (optional)"
-            placeholderTextColor="#B0B5BD"
-            value={itemDescription}
-            onChangeText={setItemDescription}
-          />
-          <TouchableOpacity
-            style={[styles.submitButton, !itemName.trim() && styles.submitDisabled]}
-            onPress={handleAddItem}
-            disabled={!itemName.trim()}
-            activeOpacity={0.7}
-          >
-            <StyledText weight={600} style={styles.submitText}>Add Item</StyledText>
-          </TouchableOpacity>
-        </View>
-      )}
+  return (
+    <View style={styles.container}>
+      <Header
+        showBack
+        title={shelf.name}
+        onBack={() => navigation.goBack()}
+      />
 
       {shelf.items.length === 0 ? (
-        <View style={styles.emptyState}>
-          <StyledText style={styles.emptyText}>No items on this shelf yet</StyledText>
+        <View style={styles.container}>
+          <ListHeader />
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No items on this shelf yet</Text>
+            <TouchableOpacity
+              style={styles.emptyAddBtn}
+              onPress={() => setShowAddModal(true)}
+            >
+              <Ionicons name="add" size={18} color={Colors.Background} />
+              <Text style={styles.emptyAddText}>Add First Item</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <FlatList
           data={shelf.items}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={ListHeader}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
       )}
-    </KeyboardAvoidingView>
+
+      <AddItemModal
+        visible={showAddModal}
+        shelfName={shelf.name}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddItem}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.Background,
   },
   centered: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
   },
-  notFound: {
-    fontSize: 16,
-    color: '#8E9196',
+  notFoundText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.md,
+    color: Colors.GrayText,
   },
-  infoSection: {
-    backgroundColor: '#FFFFFF',
-    margin: 20,
-    borderRadius: 12,
+  infoCard: {
+    backgroundColor: Colors.SecondaryWhite,
+    margin: Spacing.ScreenPadding,
+    marginBottom: 12,
+    borderRadius: Radius.Card,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
   },
-  infoRow: {
+  infoTop: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 14,
   },
-  infoBlock: {
+  shelfIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: Colors.Background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  infoDetails: {
     flex: 1,
   },
-  label: {
-    fontSize: 12,
-    color: '#8E9196',
+  shelfName: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.sizes.lg,
+    color: Colors.DarkText,
     marginBottom: 2,
   },
-  value: {
-    fontSize: 15,
-    color: '#2A3342',
+  shelfLocation: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
+  },
+  qrPreview: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 14,
+    backgroundColor: Colors.Background,
+    borderRadius: Radius.Card,
   },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
   },
-  qrButton: {
+  printQRBtn: {
     flex: 1,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#4A7BF7',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    height: 42,
+    borderRadius: Radius.Button,
+    backgroundColor: Colors.PrimaryBlue,
+    gap: 6,
   },
-  qrButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  printQRText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.sm,
+    color: Colors.Background,
   },
-  deleteShelfButton: {
+  addItemBtn: {
     flex: 1,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#FFF0EB',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    height: 42,
+    borderRadius: Radius.Button,
+    backgroundColor: Colors.PrimaryBlue,
+    gap: 6,
   },
-  deleteShelfText: {
-    color: '#FFA26B',
-    fontSize: 14,
+  addItemText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.sm,
+    color: Colors.Background,
   },
   itemsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  itemsTitle: {
-    fontSize: 16,
-    color: '#2A3342',
-  },
-  addItemButton: {
-    fontSize: 14,
-    color: '#4A7BF7',
-  },
-  form: {
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  input: {
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: '#2A3342',
-    fontFamily: 'SometypeMono-Regular',
+    paddingHorizontal: Spacing.ScreenPadding,
     marginBottom: 10,
   },
-  submitButton: {
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: '#6EE7B7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  submitDisabled: {
-    opacity: 0.5,
-  },
-  submitText: {
-    color: '#2A3342',
-    fontSize: 14,
+  itemsTitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.md,
+    color: Colors.DarkText,
   },
   list: {
-    paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingHorizontal: Spacing.ScreenPadding,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 60,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
+    marginBottom: 16,
+  },
+  emptyAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: Radius.Button,
+    backgroundColor: Colors.PrimaryBlue,
+    gap: 6,
+  },
+  emptyAddText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.sm,
+    color: Colors.Background,
   },
 });

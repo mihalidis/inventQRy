@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import StyledText from '../components/atoms/StyledText';
+import { Ionicons } from '@expo/vector-icons';
+import Header from '../components/Header';
+import SearchBar from '../components/SearchBar';
 import { useInventory } from '../hooks/useInventory';
 import { RootStackParamList, Item, Shelf } from '../types/inventory';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -15,7 +17,6 @@ interface FlatItem {
 }
 
 export default function ItemsScreen() {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { shelves } = useInventory();
 
@@ -31,44 +32,64 @@ export default function ItemsScreen() {
     );
   }, [shelves]);
 
-  const renderItem = ({ item: entry }: { item: FlatItem }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('ShelfDetail', { shelfId: entry.shelf.id })}
-      activeOpacity={0.7}
-    >
-      <StyledText weight={600} style={styles.itemName}>
-        {entry.item.name}
-      </StyledText>
-      {entry.item.description ? (
-        <StyledText style={styles.description} numberOfLines={1}>
-          {entry.item.description}
-        </StyledText>
-      ) : null}
-      <View style={styles.meta}>
-        <View style={styles.shelfTag}>
-          <StyledText weight={500} style={styles.shelfName}>
-            {entry.shelf.name}
-          </StyledText>
+  const renderItem = ({ item: entry }: { item: FlatItem }) => {
+    const dateStr = new Date(entry.item.dateAdded).toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'short',
+    });
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('ShelfDetail', { shelfId: entry.shelf.id })}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardContent}>
+          <Text style={styles.itemName} numberOfLines={1}>{entry.item.name}</Text>
+          {entry.item.description ? (
+            <Text style={styles.description} numberOfLines={1}>
+              {entry.item.description}
+            </Text>
+          ) : null}
+          <View style={styles.meta}>
+            <View style={styles.shelfTag}>
+              <Text style={styles.shelfName}>{entry.shelf.name}</Text>
+            </View>
+            <Text style={styles.date}>{dateStr}</Text>
+          </View>
         </View>
-        <StyledText style={styles.location}>{entry.shelf.location}</StyledText>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <StyledText weight={900} style={styles.title}>All Items</StyledText>
-        <StyledText style={styles.count}>
-          {allItems.length} {allItems.length === 1 ? 'item' : 'items'}
-        </StyledText>
+    <View style={styles.container}>
+      <Header showLogo showNotification />
+
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>All Items</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.count}>{allItems.length}</Text>
+        </View>
       </View>
+
+      <View style={{ marginBottom: 12 }}>
+        <SearchBar
+          value=""
+          onChangeText={() => {}}
+          onFocus={() => navigation.navigate('Search')}
+          editable={false}
+          placeholder="Search items..."
+        />
+      </View>
+
       {allItems.length === 0 ? (
         <View style={styles.emptyState}>
-          <StyledText style={styles.emptyText}>
-            No items added yet. Add items to your shelves to see them here.
-          </StyledText>
+          <Ionicons name="list" size={48} color={Colors.Border} />
+          <Text style={styles.emptyTitle}>No items yet</Text>
+          <Text style={styles.emptyText}>
+            Add items to your shelves to see them here
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -86,77 +107,100 @@ export default function ItemsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.Background,
   },
-  header: {
+  titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.ScreenPadding,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 24,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.sizes.xxl,
+    color: Colors.DarkText,
+  },
+  countBadge: {
+    height: 28,
+    minWidth: 28,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: Colors.SecondaryWhite,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   count: {
-    fontSize: 13,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.sm,
+    color: Colors.PrimaryBlue,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.ScreenPadding,
     paddingBottom: 20,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: Colors.SecondaryWhite,
+    borderRadius: Radius.Card,
     padding: 14,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardContent: {
+    flex: 1,
   },
   itemName: {
-    fontSize: 15,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.md,
+    color: Colors.DarkText,
     marginBottom: 2,
   },
   description: {
-    fontSize: 13,
-    color: '#8E9196',
-    marginBottom: 8,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
+    marginBottom: 6,
   },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F2F5',
+    gap: 8,
   },
   shelfTag: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.Background,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
-    marginRight: 8,
   },
   shelfName: {
-    fontSize: 11,
-    color: '#4A7BF7',
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.xs,
+    color: Colors.PrimaryBlue,
   },
-  location: {
-    fontSize: 12,
-    color: '#8E9196',
+  date: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.xs,
+    color: Colors.GrayText,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingBottom: 80,
+  },
+  emptyTitle: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.lg,
+    color: Colors.DarkText,
+    marginTop: 14,
+    marginBottom: 4,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
     textAlign: 'center',
+    paddingHorizontal: 40,
   },
 });

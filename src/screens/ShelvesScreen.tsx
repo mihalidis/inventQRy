@@ -1,22 +1,28 @@
 import React, { useCallback } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import StyledText from '../components/atoms/StyledText';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Header from '../components/Header';
 import ShelfCard from '../components/ShelfCard';
 import { useInventory } from '../hooks/useInventory';
 import { RootStackParamList, Shelf } from '../types/inventory';
+import { Colors, Radius, Spacing, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ShelvesScreen() {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { shelves } = useInventory();
 
   const handleShelfPress = useCallback(
-    (shelfId: string) => navigation.navigate('ShelfDetail', { shelfId }),
+    (shelf: Shelf) => navigation.navigate('ShelfDetail', { shelfId: shelf.id }),
     [navigation]
   );
 
@@ -28,24 +34,38 @@ export default function ShelvesScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <StyledText weight={900} style={styles.title}>Shelves</StyledText>
-        <TouchableOpacity onPress={() => navigation.navigate('AddShelf')}>
-          <StyledText weight={600} style={styles.addButton}>+ New</StyledText>
+    <View style={styles.container}>
+      <Header showLogo showNotification />
+
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Shelves</Text>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => navigation.navigate('AddShelf')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={18} color={Colors.Background} />
+          <Text style={styles.addBtnText}>New</Text>
         </TouchableOpacity>
       </View>
+
       {shelves.length === 0 ? (
         <View style={styles.emptyState}>
-          <StyledText style={styles.emptyText}>
-            No shelves created yet
-          </StyledText>
+          <MaterialCommunityIcons
+            name="package-variant-closed"
+            size={48}
+            color={Colors.GrayText}
+          />
+          <Text style={styles.emptyTitle}>No shelves created yet</Text>
+          <Text style={styles.emptyText}>Tap "+ New" to create your first shelf</Text>
         </View>
       ) : (
         <FlatList
           data={shelves}
           renderItem={renderShelf}
           keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
@@ -57,35 +77,56 @@ export default function ShelvesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.Background,
   },
-  header: {
+  titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.ScreenPadding,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 24,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.sizes.xxl,
+    color: Colors.DarkText,
   },
-  addButton: {
-    fontSize: 14,
-    color: '#4A7BF7',
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: Radius.Button,
+    backgroundColor: Colors.PrimaryBlue,
+    gap: 4,
+  },
+  addBtnText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.sm,
+    color: Colors.Background,
+  },
+  gridRow: {
+    paddingHorizontal: Spacing.ScreenPadding - 6,
   },
   list: {
-    paddingHorizontal: 20,
     paddingBottom: 20,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 80,
+  },
+  emptyTitle: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.lg,
+    color: Colors.DarkText,
+    marginTop: 14,
+    marginBottom: 4,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
   },
 });

@@ -1,52 +1,51 @@
 import React, { memo } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import StyledText from './atoms/StyledText';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors, Radius, Typography } from '../constants/theme';
 import { Item } from '../types/inventory';
 
 interface ItemCardProps {
   item: Item;
   onDelete: (itemId: string) => void;
+  shelfName?: string;
 }
 
-function ItemCard({ item, onDelete }: ItemCardProps) {
-  const formattedDate = new Date(item.dateAdded).toLocaleDateString();
+function ItemCardComponent({ item, onDelete, shelfName }: ItemCardProps) {
+  const dateStr = new Date(item.dateAdded).toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
     <View style={styles.card}>
       <View style={styles.content}>
-        <StyledText weight={600} style={styles.name}>
-          {item.name}
-        </StyledText>
+        <Text style={styles.name}>{item.name}</Text>
         {item.description ? (
-          <StyledText style={styles.description} numberOfLines={2}>
-            {item.description}
-          </StyledText>
+          <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
         ) : null}
-        <StyledText style={styles.date}>{formattedDate}</StyledText>
+        {shelfName && <Text style={styles.shelfName}>Shelf: {shelfName}</Text>}
+        <Text style={styles.date}>{dateStr}</Text>
       </View>
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={styles.deleteBtn}
         onPress={() => onDelete(item.id)}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <StyledText weight={600} style={styles.deleteText}>
-          ✕
-        </StyledText>
+        <MaterialCommunityIcons name="delete-outline" size={22} color={Colors.Danger} />
       </TouchableOpacity>
     </View>
   );
 }
 
-export default memo(ItemCard);
+export default memo(ItemCardComponent);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: Colors.SecondaryWhite,
+    borderRadius: Radius.Card,
     padding: 14,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E8EBF0',
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -54,30 +53,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    fontSize: 15,
-    color: '#2A3342',
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.md,
+    color: Colors.DarkText,
     marginBottom: 2,
   },
   description: {
-    fontSize: 13,
-    color: '#8E9196',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    color: Colors.GrayText,
     marginBottom: 4,
   },
+  shelfName: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.xs,
+    color: Colors.PrimaryBlue,
+    marginBottom: 2,
+  },
   date: {
-    fontSize: 11,
-    color: '#B0B5BD',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.xs,
+    color: Colors.GrayText,
   },
-  deleteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFF0EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  deleteText: {
-    fontSize: 14,
-    color: '#FFA26B',
+  deleteBtn: {
+    padding: 8,
+    marginLeft: 8,
   },
 });

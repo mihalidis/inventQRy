@@ -3,7 +3,6 @@ export interface Item {
   name: string;
   description: string;
   dateAdded: string;
-  image?: string;
 }
 
 export interface Shelf {
@@ -19,6 +18,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   ShelfDetail: { shelfId: string };
   AddShelf: undefined;
+  ShelfCreatedQR: { shelfId: string };
   Search: undefined;
   PrintQR: { shelfId: string };
 };
