@@ -1,145 +1,156 @@
-import React, { createContext, useCallback, useMemo, useReducer } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { Item, Shelf } from '../types/inventory';
-import { generateId, generateQRValue } from '../utils/qr';
+import { useAuth } from './AuthContext';
+import {
+  subscribeToShelves,
+  subscribeToItems,
+  createShelf as createShelfService,
+  deleteShelfWithItems,
+  addItem as addItemService,
+  deleteItem as deleteItemService,
+  searchItemsByName,
+  findShelfByQR,
+} from '../services/firestore';
 
-interface InventoryState {
+interface InventoryContextValue {
   shelves: Shelf[];
-}
-
-interface InventoryContextValue extends InventoryState {
-  addShelf: (name: string, location: string) => Shelf;
-  removeShelf: (shelfId: string) => void;
+  items: Item[];
+  loading: boolean;
+  addShelf: (name: string, location: string) => Promise<string>;
+  removeShelf: (shelfId: string) => Promise<void>;
   getShelfById: (shelfId: string) => Shelf | undefined;
-  getShelfByQR: (qrCode: string) => Shelf | undefined;
-  addItemToShelf: (shelfId: string, name: string, description: string) => void;
-  removeItemFromShelf: (shelfId: string, itemId: string) => void;
-  searchItems: (query: string) => Array<{ item: Item; shelf: Shelf }>;
+  getShelfByQR: (qrCode: string) => Promise<Shelf | null>;
+  getItemsForShelf: (shelfId: string) => Item[];
+  addItemToShelf: (shelfId: string, name: string, description: string) => Promise<void>;
+  removeItemFromShelf: (shelfId: string, itemId: string) => Promise<void>;
+  searchItems: (query: string) => Promise<Array<{ item: Item; shelf: Shelf }>>;
 }
-
-type Action =
-  | { type: 'ADD_SHELF'; payload: Shelf }
-  | { type: 'REMOVE_SHELF'; payload: string }
-  | { type: 'ADD_ITEM'; payload: { shelfId: string; item: Item } }
-  | { type: 'REMOVE_ITEM'; payload: { shelfId: string; itemId: string } };
-
-function inventoryReducer(state: InventoryState, action: Action): InventoryState {
-  switch (action.type) {
-    case 'ADD_SHELF':
-      return { ...state, shelves: [...state.shelves, action.payload] };
-
-    case 'REMOVE_SHELF':
-      return {
-        ...state,
-        shelves: state.shelves.filter((s) => s.id !== action.payload),
-      };
-
-    case 'ADD_ITEM':
-      return {
-        ...state,
-        shelves: state.shelves.map((s) =>
-          s.id === action.payload.shelfId
-            ? { ...s, items: [...s.items, action.payload.item] }
-            : s
-        ),
-      };
-
-    case 'REMOVE_ITEM':
-      return {
-        ...state,
-        shelves: state.shelves.map((s) =>
-          s.id === action.payload.shelfId
-            ? { ...s, items: s.items.filter((i) => i.id !== action.payload.itemId) }
-            : s
-        ),
-      };
-
-    default:
-      return state;
-  }
-}
-
-const initialState: InventoryState = { shelves: [] };
 
 export const InventoryContext = createContext<InventoryContextValue | null>(null);
 
 export function InventoryProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(inventoryReducer, initialState);
+  const { user } = useAuth();
+  const [shelves, setShelves] = useState<Shelf[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addShelf = useCallback((name: string, location: string): Shelf => {
-    const id = generateId();
-    const shelf: Shelf = {
-      id,
-      name,
-      location,
-      items: [],
-      dateAdded: new Date().toISOString(),
-      qrCode: generateQRValue(id),
+  // Real-time listeners
+  useEffect(() => {
+    if (!user) {
+      setShelves([]);
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    let shelvesLoaded = false;
+    let itemsLoaded = false;
+
+    const checkLoaded = () => {
+      if (shelvesLoaded && itemsLoaded) setLoading(false);
     };
-    dispatch({ type: 'ADD_SHELF', payload: shelf });
-    return shelf;
-  }, []);
 
-  const removeShelf = useCallback((shelfId: string) => {
-    dispatch({ type: 'REMOVE_SHELF', payload: shelfId });
-  }, []);
+    const unsubShelves = subscribeToShelves(user.uid, (s) => {
+      setShelves(s);
+      shelvesLoaded = true;
+      checkLoaded();
+    });
+
+    const unsubItems = subscribeToItems(user.uid, (i) => {
+      setItems(i);
+      itemsLoaded = true;
+      checkLoaded();
+    });
+
+    return () => {
+      unsubShelves();
+      unsubItems();
+    };
+  }, [user]);
+
+  const addShelf = useCallback(
+    async (name: string, location: string): Promise<string> => {
+      if (!user) throw new Error('Not authenticated');
+      return createShelfService(user.uid, name, location);
+    },
+    [user]
+  );
+
+  const removeShelf = useCallback(
+    async (shelfId: string) => {
+      if (!user) return;
+      await deleteShelfWithItems(user.uid, shelfId);
+    },
+    [user]
+  );
 
   const getShelfById = useCallback(
-    (shelfId: string) => state.shelves.find((s) => s.id === shelfId),
-    [state.shelves]
+    (shelfId: string) => shelves.find((s) => s.id === shelfId),
+    [shelves]
   );
 
   const getShelfByQR = useCallback(
-    (qrCode: string) => state.shelves.find((s) => s.qrCode === qrCode),
-    [state.shelves]
+    async (qrCode: string): Promise<Shelf | null> => {
+      // First check local state
+      const local = shelves.find((s) => s.qrCode === qrCode);
+      if (local) return local;
+      // Then check Firestore (could be another user's shelf)
+      return findShelfByQR(qrCode);
+    },
+    [shelves]
   );
 
-  const addItemToShelf = useCallback((shelfId: string, name: string, description: string) => {
-    const item: Item = {
-      id: generateId(),
-      name,
-      description,
-      dateAdded: new Date().toISOString(),
-    };
-    dispatch({ type: 'ADD_ITEM', payload: { shelfId, item } });
-  }, []);
+  const getItemsForShelf = useCallback(
+    (shelfId: string) => items.filter((i) => i.shelfId === shelfId),
+    [items]
+  );
 
-  const removeItemFromShelf = useCallback((shelfId: string, itemId: string) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: { shelfId, itemId } });
-  }, []);
+  const addItemToShelf = useCallback(
+    async (shelfId: string, name: string, description: string) => {
+      if (!user) return;
+      await addItemService(user.uid, shelfId, name, description);
+    },
+    [user]
+  );
+
+  const removeItemFromShelf = useCallback(
+    async (shelfId: string, itemId: string) => {
+      if (!user) return;
+      await deleteItemService(shelfId, itemId);
+    },
+    [user]
+  );
 
   const searchItems = useCallback(
-    (query: string): Array<{ item: Item; shelf: Shelf }> => {
-      const lowerQuery = query.toLowerCase().trim();
-      if (!lowerQuery) return [];
-
-      const results: Array<{ item: Item; shelf: Shelf }> = [];
-      for (const shelf of state.shelves) {
-        for (const item of shelf.items) {
-          if (
-            item.name.toLowerCase().includes(lowerQuery) ||
-            item.description.toLowerCase().includes(lowerQuery)
-          ) {
-            results.push({ item, shelf });
-          }
-        }
-      }
-      return results;
+    async (q: string): Promise<Array<{ item: Item; shelf: Shelf }>> => {
+      if (!user || !q.trim()) return [];
+      const foundItems = await searchItemsByName(user.uid, q);
+      return foundItems
+        .map((item) => {
+          const shelf = shelves.find((s) => s.id === item.shelfId);
+          return shelf ? { item, shelf } : null;
+        })
+        .filter(Boolean) as Array<{ item: Item; shelf: Shelf }>;
     },
-    [state.shelves]
+    [user, shelves]
   );
 
   const value = useMemo<InventoryContextValue>(
     () => ({
-      shelves: state.shelves,
+      shelves,
+      items,
+      loading,
       addShelf,
       removeShelf,
       getShelfById,
       getShelfByQR,
+      getItemsForShelf,
       addItemToShelf,
       removeItemFromShelf,
       searchItems,
     }),
-    [state.shelves, addShelf, removeShelf, getShelfById, getShelfByQR, addItemToShelf, removeItemFromShelf, searchItems]
+    [shelves, items, loading, addShelf, removeShelf, getShelfById, getShelfByQR, getItemsForShelf, addItemToShelf, removeItemFromShelf, searchItems]
   );
 
   return (

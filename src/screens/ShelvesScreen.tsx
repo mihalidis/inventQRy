@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,40 +13,62 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import ShelfCard from '../components/ShelfCard';
 import { useInventory } from '../hooks/useInventory';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList, Shelf } from '../types/inventory';
-import { Colors, Radius, Spacing, Typography } from '../constants/theme';
+import { Radius, Spacing, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ShelvesScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { shelves } = useInventory();
+  const { shelves, removeShelf } = useInventory();
+  const { t } = useLanguage();
+  const { colors } = useTheme();
 
   const handleShelfPress = useCallback(
     (shelf: Shelf) => navigation.navigate('ShelfDetail', { shelfId: shelf.id }),
     [navigation]
   );
 
+  const handleDeleteShelf = useCallback(
+    (shelf: Shelf) => {
+      Alert.alert(
+        'Rafı Sil',
+        `"${shelf.name}" rafını ve içindeki tüm eşyaları silmek istediğinize emin misiniz?`,
+        [
+          { text: 'İptal', style: 'cancel' },
+          {
+            text: 'Sil',
+            style: 'destructive',
+            onPress: () => removeShelf(shelf.id),
+          },
+        ]
+      );
+    },
+    [removeShelf]
+  );
+
   const renderShelf = useCallback(
     ({ item }: { item: Shelf }) => (
-      <ShelfCard shelf={item} onPress={handleShelfPress} />
+      <ShelfCard shelf={item} onPress={handleShelfPress} onDelete={handleDeleteShelf} />
     ),
-    [handleShelfPress]
+    [handleShelfPress, handleDeleteShelf]
   );
 
   return (
-    <View style={styles.container}>
-      <Header showLogo showNotification />
+    <View style={[styles.container, { backgroundColor: colors.Background }]}>
+      <Header showLogo showProfile onProfile={() => navigation.navigate('Profile')} />
 
       <View style={styles.titleRow}>
-        <Text style={styles.title}>Shelves</Text>
+        <Text style={[styles.title, { color: colors.DarkText }]}>{t.shelves}</Text>
         <TouchableOpacity
-          style={styles.addBtn}
+          style={[styles.addBtn, { backgroundColor: colors.PrimaryBlue }]}
           onPress={() => navigation.navigate('AddShelf')}
           activeOpacity={0.7}
         >
-          <Ionicons name="add" size={18} color={Colors.Background} />
-          <Text style={styles.addBtnText}>New</Text>
+          <Ionicons name="add" size={18} color="#FFFFFF" />
+          <Text style={styles.addBtnText}>{t.newShelf.replace('+ ', '')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -54,10 +77,10 @@ export default function ShelvesScreen() {
           <MaterialCommunityIcons
             name="package-variant-closed"
             size={48}
-            color={Colors.GrayText}
+            color={colors.GrayText}
           />
-          <Text style={styles.emptyTitle}>No shelves created yet</Text>
-          <Text style={styles.emptyText}>Tap "+ New" to create your first shelf</Text>
+          <Text style={[styles.emptyTitle, { color: colors.DarkText }]}>{t.noShelvesYet}</Text>
+          <Text style={[styles.emptyText, { color: colors.GrayText }]}>{t.createFirstShelf}</Text>
         </View>
       ) : (
         <FlatList
@@ -77,7 +100,6 @@ export default function ShelvesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
   },
   titleRow: {
     flexDirection: 'row',
@@ -89,7 +111,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.xxl,
-    color: Colors.DarkText,
   },
   addBtn: {
     flexDirection: 'row',
@@ -97,13 +118,12 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 14,
     borderRadius: Radius.Button,
-    backgroundColor: Colors.PrimaryBlue,
     gap: 4,
   },
   addBtnText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.sizes.sm,
-    color: Colors.Background,
+    color: '#FFFFFF',
   },
   gridRow: {
     paddingHorizontal: Spacing.ScreenPadding - 6,
@@ -120,13 +140,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.lg,
-    color: Colors.DarkText,
     marginTop: 14,
     marginBottom: 4,
   },
   emptyText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
   },
 });

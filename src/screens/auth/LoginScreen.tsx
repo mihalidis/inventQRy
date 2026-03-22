@@ -13,10 +13,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Radius, Spacing, Typography } from '../../constants/theme';
 
 export default function LoginScreen({ navigation }: any) {
   const { login } = useAuth();
+  const { t } = useLanguage();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,15 +29,8 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     setError('');
-
-    if (!email.trim()) {
-      setError('Lütfen e-posta adresinizi girin.');
-      return;
-    }
-    if (!password) {
-      setError('Lütfen şifrenizi girin.');
-      return;
-    }
+    if (!email.trim()) { setError(t.enterEmail); return; }
+    if (!password) { setError(t.enterPassword); return; }
 
     setLoading(true);
     try {
@@ -47,7 +44,7 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.Background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -63,23 +60,23 @@ export default function LoginScreen({ navigation }: any) {
           />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.title}>Hoş Geldiniz</Text>
-          <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
+        <View style={[styles.card, { backgroundColor: colors.Background, borderColor: colors.Border }]}>
+          <Text style={[styles.title, { color: colors.DarkText }]}>{t.welcome}</Text>
+          <Text style={[styles.subtitle, { color: colors.GrayText }]}>{t.loginSubtitle}</Text>
 
           {error ? (
             <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={18} color={Colors.Danger} />
-              <Text style={styles.errorText}>{error}</Text>
+              <Ionicons name="alert-circle" size={18} color={colors.Danger} />
+              <Text style={[styles.errorText, { color: colors.Danger }]}>{error}</Text>
             </View>
           ) : null}
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color={Colors.GrayText} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.SecondaryWhite }]}>
+            <Ionicons name="mail-outline" size={20} color={colors.GrayText} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="E-posta"
-              placeholderTextColor={Colors.GrayText}
+              style={[styles.input, { color: colors.DarkText }]}
+              placeholder={t.email}
+              placeholderTextColor={colors.GrayText}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -88,12 +85,12 @@ export default function LoginScreen({ navigation }: any) {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={Colors.GrayText} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.SecondaryWhite }]}>
+            <Ionicons name="lock-closed-outline" size={20} color={colors.GrayText} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="Şifre"
-              placeholderTextColor={Colors.GrayText}
+              style={[styles.input, { color: colors.DarkText }]}
+              placeholder={t.password}
+              placeholderTextColor={colors.GrayText}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -103,13 +100,13 @@ export default function LoginScreen({ navigation }: any) {
               <Ionicons
                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
-                color={Colors.GrayText}
+                color={colors.GrayText}
               />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: colors.PrimaryBlue }, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.8}
@@ -117,7 +114,7 @@ export default function LoginScreen({ navigation }: any) {
             {loading ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.buttonText}>Giriş Yap</Text>
+              <Text style={styles.buttonText}>{t.login}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -126,8 +123,8 @@ export default function LoginScreen({ navigation }: any) {
           style={styles.registerLink}
           onPress={() => navigation.navigate('Register')}
         >
-          <Text style={styles.registerText}>
-            Hesabınız yok mu? <Text style={styles.registerTextBold}>Kayıt Ol</Text>
+          <Text style={[styles.registerText, { color: colors.GrayText }]}>
+            {t.noAccount} <Text style={[styles.registerTextBold, { color: colors.PrimaryBlue }]}>{t.register}</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -138,7 +135,6 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -155,28 +151,24 @@ const styles = StyleSheet.create({
     height: 120,
   },
   card: {
-    backgroundColor: Colors.Background,
     borderRadius: Radius.Card,
     padding: 24,
-    shadowColor: Colors.DarkText,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 6,
     borderWidth: 1,
-    borderColor: Colors.Border,
   },
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.xxl,
-    color: Colors.DarkText,
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -193,13 +185,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.sm,
-    color: Colors.Danger,
     flex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.SecondaryWhite,
     borderRadius: Radius.Input,
     marginBottom: 14,
     paddingHorizontal: 14,
@@ -212,20 +202,18 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.md,
-    color: Colors.DarkText,
     height: '100%',
   },
   eyeIcon: {
     padding: 4,
   },
   button: {
-    backgroundColor: Colors.PrimaryBlue,
     borderRadius: Radius.Button,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: Colors.PrimaryBlue,
+    shadowColor: '#4A7BF7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -247,10 +235,8 @@ const styles = StyleSheet.create({
   registerText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
   },
   registerTextBold: {
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.PrimaryBlue,
   },
 });

@@ -11,7 +11,7 @@ interface ItemCardProps {
 }
 
 function ItemCardComponent({ item, onDelete, shelfName }: ItemCardProps) {
-  const dateStr = new Date(item.dateAdded).toLocaleDateString('tr-TR', {
+  const dateStr = new Date(item.createdAt).toLocaleDateString('tr-TR', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

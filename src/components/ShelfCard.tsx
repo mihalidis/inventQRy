@@ -7,11 +7,12 @@ import { Shelf } from '../types/inventory';
 interface ShelfCardProps {
   shelf: Shelf;
   onPress: (shelf: Shelf) => void;
+  onDelete?: (shelf: Shelf) => void;
   showCheckmark?: boolean;
 }
 
-function ShelfCardComponent({ shelf, onPress, showCheckmark = false }: ShelfCardProps) {
-  const dateStr = new Date(shelf.dateAdded).toLocaleDateString('tr-TR', {
+function ShelfCardComponent({ shelf, onPress, onDelete, showCheckmark = false }: ShelfCardProps) {
+  const dateStr = new Date(shelf.createdAt).toLocaleDateString('tr-TR', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -21,6 +22,7 @@ function ShelfCardComponent({ shelf, onPress, showCheckmark = false }: ShelfCard
     <TouchableOpacity
       style={styles.card}
       onPress={() => onPress(shelf)}
+      onLongPress={() => onDelete?.(shelf)}
       activeOpacity={0.7}
     >
       {showCheckmark && (
@@ -36,7 +38,7 @@ function ShelfCardComponent({ shelf, onPress, showCheckmark = false }: ShelfCard
         />
       </View>
       <Text style={styles.name} numberOfLines={1}>{shelf.name}</Text>
-      <Text style={styles.count}>{shelf.items.length} Items</Text>
+      <Text style={styles.count}>{shelf.itemCount} Items</Text>
       <Text style={styles.date}>{dateStr}</Text>
     </TouchableOpacity>
   );

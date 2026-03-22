@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,14 +26,20 @@ export default function AddShelfScreen() {
 
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const isValid = name.trim().length > 0 && location.trim().length > 0;
 
-  const handleSubmit = useCallback(() => {
-    if (!isValid) return;
-    const shelf = addShelf(name.trim(), location.trim());
-    navigation.replace('ShelfCreatedQR', { shelfId: shelf.id });
-  }, [isValid, name, location, addShelf, navigation]);
+  const handleSubmit = useCallback(async () => {
+    if (!isValid || loading) return;
+    setLoading(true);
+    try {
+      const shelfId = await addShelf(name.trim(), location.trim());
+      navigation.replace('ShelfCreatedQR', { shelfId });
+    } catch {
+      setLoading(false);
+    }
+  }, [isValid, loading, name, location, addShelf, navigation]);
 
   return (
     <View style={styles.container}>
@@ -79,12 +86,16 @@ export default function AddShelfScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.button, !isValid && styles.buttonDisabled]}
+            style={[styles.button, (!isValid || loading) && styles.buttonDisabled]}
             onPress={handleSubmit}
-            disabled={!isValid}
+            disabled={!isValid || loading}
             activeOpacity={0.7}
           >
-            <Text style={styles.buttonText}>Oluştur</Text>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>Oluştur</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -6,6 +6,8 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { InventoryProvider } from './src/context/InventoryContext';
+import { LanguageProvider } from './src/context/LanguageContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 SplashScreen.preventAutoHideAsync().then();
@@ -31,12 +33,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <AuthProvider>
-          <InventoryProvider>
-            <AppNavigator />
-            <StatusBar style="dark" />
-          </InventoryProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <InventoryProvider>
+                <AppNavigator />
+                <StatusBar style="auto" />
+              </InventoryProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </View>
     </SafeAreaProvider>
   );

@@ -1,17 +1,20 @@
 export interface Item {
   id: string;
+  shelfId: string;
+  userId: string;
   name: string;
   description: string;
-  dateAdded: string;
+  createdAt: string;
 }
 
 export interface Shelf {
   id: string;
+  userId: string;
   name: string;
   location: string;
-  items: Item[];
-  dateAdded: string;
   qrCode: string;
+  itemCount: number;
+  createdAt: string;
 }
 
 export type AuthStackParamList = {
@@ -26,6 +29,8 @@ export type RootStackParamList = {
   ShelfCreatedQR: { shelfId: string };
   Search: undefined;
   PrintQR: { shelfId: string };
+  Profile: undefined;
+  AppPreferences: undefined;
 };
 
 export type BottomTabParamList = {

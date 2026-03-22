@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.lg,
     color: Colors.DarkText,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
     fontFamily: Typography.fontFamily.medium,

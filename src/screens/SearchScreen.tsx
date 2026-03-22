@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,11 +20,35 @@ export default function SearchScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { searchItems } = useInventory();
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const results = useMemo(() => searchItems(query), [query, searchItems]);
+  const handleSearch = useCallback(
+    async (text: string) => {
+      setQuery(text);
+      if (!text.trim()) {
+        setResults([]);
+        setSearched(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const found = await searchItems(text);
+        setResults(found);
+        setSearched(true);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchItems]
+  );
 
   const renderResult = ({ item: result }: { item: SearchResult }) => {
-    const dateStr = new Date(result.item.dateAdded).toLocaleDateString('tr-TR', {
+    const dateStr = new Date(result.item.createdAt).toLocaleDateString('tr-TR', {
       day: 'numeric',
       month: 'short',
     });
@@ -65,12 +89,16 @@ export default function SearchScreen() {
       <View style={{ marginBottom: 12 }}>
         <SearchBar
           value={query}
-          onChangeText={setQuery}
+          onChangeText={handleSearch}
           placeholder="Search for items..."
         />
       </View>
 
-      {query.trim() && results.length === 0 ? (
+      {loading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={Colors.PrimaryBlue} />
+        </View>
+      ) : searched && results.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>No items found for "{query}"</Text>
         </View>

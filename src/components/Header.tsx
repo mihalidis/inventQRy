@@ -1,34 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Spacing, Typography } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { Spacing, Typography } from '../constants/theme';
 
 interface HeaderProps {
   showLogo?: boolean;
   showBack?: boolean;
-  showNotification?: boolean;
+  showProfile?: boolean;
   title?: string;
   onBack?: () => void;
-  onNotification?: () => void;
+  onProfile?: () => void;
 }
 
 export default function Header({
   showLogo = false,
   showBack = false,
-  showNotification = false,
+  showProfile = false,
   title,
   onBack,
-  onNotification,
+  onProfile,
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8, backgroundColor: colors.Background }]}>
       <View style={styles.left}>
         {showBack && (
           <TouchableOpacity onPress={onBack} style={styles.iconBtn}>
-            <Ionicons name="arrow-back" size={24} color={Colors.DarkText} />
+            <Ionicons name="arrow-back" size={24} color={colors.DarkText} />
           </TouchableOpacity>
         )}
         {showLogo && (
@@ -39,16 +41,16 @@ export default function Header({
           />
         )}
         {title && !showLogo && (
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, { color: colors.DarkText }]}>{title}</Text>
         )}
       </View>
       <View style={styles.right}>
-        {showNotification && (
-          <TouchableOpacity onPress={onNotification} style={styles.iconBtn}>
-            <MaterialCommunityIcons
-              name="bell-outline"
-              size={24}
-              color={Colors.DarkText}
+        {showProfile && (
+          <TouchableOpacity onPress={onProfile} style={styles.iconBtn}>
+            <Ionicons
+              name="person-circle-outline"
+              size={28}
+              color={colors.PrimaryBlue}
             />
           </TouchableOpacity>
         )}
@@ -64,7 +66,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.ScreenPadding,
     paddingBottom: 8,
-    backgroundColor: Colors.Background,
   },
   left: {
     flexDirection: 'row',
@@ -79,13 +80,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   logoImage: {
-    width: 140,
-    height: 40,
+    width: 120,
+    height: 36,
+    marginLeft: -12,
   },
   title: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.sizes.lg,
-    color: Colors.DarkText,
     marginLeft: 12,
   },
 });

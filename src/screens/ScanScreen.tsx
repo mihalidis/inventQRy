@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScanFrame from '../components/ScanFrame';
 import { useInventory } from '../hooks/useInventory';
 import { RootStackParamList } from '../types/inventory';
-import { parseQRValue } from '../utils/qr';
+import { parseQRValue, generateQRValue } from '../utils/qr';
 import { Colors, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -19,6 +19,7 @@ export default function ScanScreen() {
   const { getShelfByQR } = useInventory();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -27,40 +28,48 @@ export default function ScanScreen() {
   }, [permission, requestPermission]);
 
   const handleBarcodeScanned = useCallback(
-    (result: BarcodeScanningResult) => {
-      if (scanned) return;
+    async (result: BarcodeScanningResult) => {
+      if (scanned || searching) return;
       setScanned(true);
+      setSearching(true);
 
-      const data = result.data;
-      const qrValue = data.startsWith('inventqry://') ? data : `inventqry://shelf/${data}`;
-      const shelf = getShelfByQR(qrValue);
+      try {
+        const data = result.data;
+        const qrValue = data.startsWith('inventqry://') ? data : generateQRValue(data);
+        const shelf = await getShelfByQR(qrValue);
 
-      if (shelf) {
-        navigation.navigate('ShelfDetail', { shelfId: shelf.id });
-      } else {
-        const shelfId = parseQRValue(qrValue);
-        if (shelfId) {
-          Alert.alert(
-            'QR Detected',
-            'This shelf is not registered yet. Would you like to create it?',
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => setScanned(false) },
-              {
-                text: 'Create Shelf',
-                onPress: () => navigation.navigate('AddShelf'),
-              },
-            ]
-          );
+        if (shelf) {
+          navigation.navigate('ShelfDetail', { shelfId: shelf.id });
         } else {
-          Alert.alert('Invalid QR', 'This QR code is not an InventQRy code.', [
-            { text: 'OK', onPress: () => setScanned(false) },
-          ]);
+          const shelfId = parseQRValue(qrValue);
+          if (shelfId) {
+            Alert.alert(
+              'QR Detected',
+              'This shelf is not registered yet. Would you like to create it?',
+              [
+                { text: 'Cancel', style: 'cancel', onPress: () => setScanned(false) },
+                {
+                  text: 'Create Shelf',
+                  onPress: () => navigation.navigate('AddShelf'),
+                },
+              ]
+            );
+          } else {
+            Alert.alert('Invalid QR', 'This QR code is not an InventQRy code.', [
+              { text: 'OK', onPress: () => setScanned(false) },
+            ]);
+          }
         }
+      } catch {
+        Alert.alert('Error', 'Failed to look up QR code.', [
+          { text: 'OK', onPress: () => setScanned(false) },
+        ]);
+      } finally {
+        setSearching(false);
+        setTimeout(() => setScanned(false), 3000);
       }
-
-      setTimeout(() => setScanned(false), 3000);
     },
-    [scanned, getShelfByQR, navigation]
+    [scanned, searching, getShelfByQR, navigation]
   );
 
   if (!permission) {
@@ -90,7 +99,6 @@ export default function ScanScreen() {
         onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
       />
 
-      {/* Dark overlay with cutout effect */}
       <View style={styles.overlay}>
         <View style={[styles.overlayTop, { paddingTop: insets.top + 16 }]}>
           <Text style={styles.title}>Scan QR</Text>
@@ -107,9 +115,13 @@ export default function ScanScreen() {
 
         <View style={styles.overlayBottom}>
           <View style={styles.statusBadge}>
-            <MaterialCommunityIcons name="qrcode-scan" size={18} color={Colors.PrimaryBlue} />
+            {searching ? (
+              <ActivityIndicator size="small" color={Colors.PrimaryBlue} />
+            ) : (
+              <MaterialCommunityIcons name="qrcode-scan" size={18} color={Colors.PrimaryBlue} />
+            )}
             <Text style={styles.scanningText}>
-              {scanned ? 'QR Detected!' : 'Scanning...'}
+              {searching ? 'Looking up...' : scanned ? 'QR Detected!' : 'Scanning...'}
             </Text>
           </View>
         </View>

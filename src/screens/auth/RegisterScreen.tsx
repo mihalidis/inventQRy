@@ -13,10 +13,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Radius, Spacing, Typography } from '../../constants/theme';
 
 export default function RegisterScreen({ navigation }: any) {
   const { register } = useAuth();
+  const { t } = useLanguage();
+  const { colors } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,27 +32,11 @@ export default function RegisterScreen({ navigation }: any) {
 
   const handleRegister = async () => {
     setError('');
-
-    if (!name.trim()) {
-      setError('Lütfen adınızı ve soyadınızı girin.');
-      return;
-    }
-    if (!email.trim()) {
-      setError('Lütfen e-posta adresinizi girin.');
-      return;
-    }
-    if (!password) {
-      setError('Lütfen bir şifre belirleyin.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Şifreler eşleşmiyor.');
-      return;
-    }
+    if (!name.trim()) { setError(t.enterName); return; }
+    if (!email.trim()) { setError(t.enterEmail); return; }
+    if (!password) { setError(t.setPassword); return; }
+    if (password.length < 6) { setError(t.weakPassword); return; }
+    if (password !== confirmPassword) { setError(t.passwordMismatch); return; }
 
     setLoading(true);
     try {
@@ -62,7 +50,7 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.Background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -78,23 +66,23 @@ export default function RegisterScreen({ navigation }: any) {
           />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.title}>Hesap Oluştur</Text>
-          <Text style={styles.subtitle}>Bilgilerinizi girerek kayıt olun</Text>
+        <View style={[styles.card, { backgroundColor: colors.Background, borderColor: colors.Border }]}>
+          <Text style={[styles.title, { color: colors.DarkText }]}>{t.createAccount}</Text>
+          <Text style={[styles.subtitle, { color: colors.GrayText }]}>{t.registerSubtitle}</Text>
 
           {error ? (
             <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={18} color={Colors.Danger} />
-              <Text style={styles.errorText}>{error}</Text>
+              <Ionicons name="alert-circle" size={18} color={colors.Danger} />
+              <Text style={[styles.errorText, { color: colors.Danger }]}>{error}</Text>
             </View>
           ) : null}
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color={Colors.GrayText} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.SecondaryWhite }]}>
+            <Ionicons name="person-outline" size={20} color={colors.GrayText} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="Ad Soyad"
-              placeholderTextColor={Colors.GrayText}
+              style={[styles.input, { color: colors.DarkText }]}
+              placeholder={t.fullName}
+              placeholderTextColor={colors.GrayText}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -102,12 +90,12 @@ export default function RegisterScreen({ navigation }: any) {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color={Colors.GrayText} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.SecondaryWhite }]}>
+            <Ionicons name="mail-outline" size={20} color={colors.GrayText} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="E-posta"
-              placeholderTextColor={Colors.GrayText}
+              style={[styles.input, { color: colors.DarkText }]}
+              placeholder={t.email}
+              placeholderTextColor={colors.GrayText}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -116,12 +104,12 @@ export default function RegisterScreen({ navigation }: any) {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={Colors.GrayText} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.SecondaryWhite }]}>
+            <Ionicons name="lock-closed-outline" size={20} color={colors.GrayText} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="Şifre"
-              placeholderTextColor={Colors.GrayText}
+              style={[styles.input, { color: colors.DarkText }]}
+              placeholder={t.password}
+              placeholderTextColor={colors.GrayText}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -131,17 +119,17 @@ export default function RegisterScreen({ navigation }: any) {
               <Ionicons
                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
-                color={Colors.GrayText}
+                color={colors.GrayText}
               />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={Colors.GrayText} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.SecondaryWhite }]}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.GrayText} style={styles.inputIcon} />
             <TextInput
-              style={styles.input}
-              placeholder="Şifre Tekrar"
-              placeholderTextColor={Colors.GrayText}
+              style={[styles.input, { color: colors.DarkText }]}
+              placeholder={t.confirmPassword}
+              placeholderTextColor={colors.GrayText}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showConfirmPassword}
@@ -151,13 +139,13 @@ export default function RegisterScreen({ navigation }: any) {
               <Ionicons
                 name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
-                color={Colors.GrayText}
+                color={colors.GrayText}
               />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: colors.PrimaryBlue }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
             activeOpacity={0.8}
@@ -165,7 +153,7 @@ export default function RegisterScreen({ navigation }: any) {
             {loading ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.buttonText}>Hesap Oluştur</Text>
+              <Text style={styles.buttonText}>{t.createAccount}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -174,8 +162,8 @@ export default function RegisterScreen({ navigation }: any) {
           style={styles.loginLink}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.loginText}>
-            Zaten hesabınız var mı? <Text style={styles.loginTextBold}>Giriş Yap</Text>
+          <Text style={[styles.loginText, { color: colors.GrayText }]}>
+            {t.hasAccount} <Text style={[styles.loginTextBold, { color: colors.PrimaryBlue }]}>{t.login}</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -186,7 +174,6 @@ export default function RegisterScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -203,28 +190,24 @@ const styles = StyleSheet.create({
     height: 100,
   },
   card: {
-    backgroundColor: Colors.Background,
     borderRadius: Radius.Card,
     padding: 24,
-    shadowColor: Colors.DarkText,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 6,
     borderWidth: 1,
-    borderColor: Colors.Border,
   },
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.xxl,
-    color: Colors.DarkText,
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -241,13 +224,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.sm,
-    color: Colors.Danger,
     flex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.SecondaryWhite,
     borderRadius: Radius.Input,
     marginBottom: 14,
     paddingHorizontal: 14,
@@ -260,20 +241,18 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.md,
-    color: Colors.DarkText,
     height: '100%',
   },
   eyeIcon: {
     padding: 4,
   },
   button: {
-    backgroundColor: Colors.PrimaryBlue,
     borderRadius: Radius.Button,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: Colors.PrimaryBlue,
+    shadowColor: '#4A7BF7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -295,10 +274,8 @@ const styles = StyleSheet.create({
   loginText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
   },
   loginTextBold: {
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.PrimaryBlue,
   },
 });

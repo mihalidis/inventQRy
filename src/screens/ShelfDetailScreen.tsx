@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -24,10 +25,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function ShelfDetailScreen() {
   const route = useRoute<ScreenRoute>();
   const navigation = useNavigation<NavigationProp>();
-  const { getShelfById, addItemToShelf, removeItemFromShelf } = useInventory();
+  const { getShelfById, getItemsForShelf, addItemToShelf, removeItemFromShelf, loading } = useInventory();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const shelf = getShelfById(route.params.shelfId);
+  const shelfItems = useMemo(
+    () => (shelf ? getItemsForShelf(shelf.id) : []),
+    [shelf, getItemsForShelf]
+  );
 
   const handleDeleteItem = useCallback(
     (itemId: string) => {
@@ -45,13 +50,26 @@ export default function ShelfDetailScreen() {
   );
 
   const handleAddItem = useCallback(
-    (name: string, description: string) => {
+    async (name: string, description: string) => {
       if (!shelf) return;
-      addItemToShelf(shelf.id, name, description);
-      setShowAddModal(false);
+      try {
+        await addItemToShelf(shelf.id, name, description);
+        setShowAddModal(false);
+      } catch (e) {
+        console.error('addItem error:', e);
+        Alert.alert('Error', 'Failed to add item.');
+      }
     },
     [shelf, addItemToShelf]
   );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={Colors.PrimaryBlue} />
+      </View>
+    );
+  }
 
   if (!shelf) {
     return (
@@ -67,7 +85,6 @@ export default function ShelfDetailScreen() {
 
   const ListHeader = () => (
     <View>
-      {/* Shelf Info Card */}
       <View style={styles.infoCard}>
         <View style={styles.infoTop}>
           <View style={styles.shelfIconContainer}>
@@ -83,7 +100,6 @@ export default function ShelfDetailScreen() {
           </View>
         </View>
 
-        {/* QR Preview */}
         <View style={styles.qrPreview}>
           <QRCode
             value={shelf.qrCode}
@@ -93,7 +109,6 @@ export default function ShelfDetailScreen() {
           />
         </View>
 
-        {/* Action Buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.printQRBtn}
@@ -114,9 +129,8 @@ export default function ShelfDetailScreen() {
         </View>
       </View>
 
-      {/* Items Header */}
       <View style={styles.itemsHeader}>
-        <Text style={styles.itemsTitle}>Items ({shelf.items.length})</Text>
+        <Text style={styles.itemsTitle}>Items ({shelfItems.length})</Text>
       </View>
     </View>
   );
@@ -129,7 +143,7 @@ export default function ShelfDetailScreen() {
         onBack={() => navigation.goBack()}
       />
 
-      {shelf.items.length === 0 ? (
+      {shelfItems.length === 0 ? (
         <View style={styles.container}>
           <ListHeader />
           <View style={styles.emptyState}>
@@ -145,7 +159,7 @@ export default function ShelfDetailScreen() {
         </View>
       ) : (
         <FlatList
-          data={shelf.items}
+          data={shelfItems}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={ListHeader}

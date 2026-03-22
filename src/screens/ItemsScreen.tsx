@@ -6,8 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import { useInventory } from '../hooks/useInventory';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList, Item, Shelf } from '../types/inventory';
-import { Colors, Radius, Spacing, Typography } from '../constants/theme';
+import { Radius, Spacing, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -18,44 +20,51 @@ interface FlatItem {
 
 export default function ItemsScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { shelves } = useInventory();
+  const { shelves, items } = useInventory();
+  const { t, language } = useLanguage();
+  const { colors } = useTheme();
 
   const allItems = useMemo<FlatItem[]>(() => {
-    const items: FlatItem[] = [];
-    for (const shelf of shelves) {
-      for (const item of shelf.items) {
-        items.push({ item, shelf });
-      }
-    }
-    return items.sort(
-      (a, b) => new Date(b.item.dateAdded).getTime() - new Date(a.item.dateAdded).getTime()
-    );
-  }, [shelves]);
+    const shelfMap = new Map(shelves.map((s) => [s.id, s]));
+    return items
+      .map((item) => {
+        const shelf = shelfMap.get(item.shelfId);
+        return shelf ? { item, shelf } : null;
+      })
+      .filter((entry): entry is FlatItem => entry !== null)
+      .sort(
+        (a, b) => new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime()
+      );
+  }, [shelves, items]);
 
   const renderItem = ({ item: entry }: { item: FlatItem }) => {
-    const dateStr = new Date(entry.item.dateAdded).toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'short',
-    });
+    const dateStr = new Date(entry.item.createdAt).toLocaleDateString(
+      language === 'tr' ? 'tr-TR' : 'en-US',
+      { day: 'numeric', month: 'short' }
+    );
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.CardBg }]}
         onPress={() => navigation.navigate('ShelfDetail', { shelfId: entry.shelf.id })}
         activeOpacity={0.7}
       >
         <View style={styles.cardContent}>
-          <Text style={styles.itemName} numberOfLines={1}>{entry.item.name}</Text>
+          <Text style={[styles.itemName, { color: colors.DarkText }]} numberOfLines={1}>
+            {entry.item.name}
+          </Text>
           {entry.item.description ? (
-            <Text style={styles.description} numberOfLines={1}>
+            <Text style={[styles.description, { color: colors.GrayText }]} numberOfLines={1}>
               {entry.item.description}
             </Text>
           ) : null}
           <View style={styles.meta}>
-            <View style={styles.shelfTag}>
-              <Text style={styles.shelfName}>{entry.shelf.name}</Text>
+            <View style={[styles.shelfTag, { backgroundColor: colors.Background }]}>
+              <Text style={[styles.shelfName, { color: colors.PrimaryBlue }]}>
+                {entry.shelf.name}
+              </Text>
             </View>
-            <Text style={styles.date}>{dateStr}</Text>
+            <Text style={[styles.date, { color: colors.GrayText }]}>{dateStr}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -63,13 +72,13 @@ export default function ItemsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Header showLogo showNotification />
+    <View style={[styles.container, { backgroundColor: colors.Background }]}>
+      <Header showLogo showProfile onProfile={() => navigation.navigate('Profile')} />
 
       <View style={styles.titleRow}>
-        <Text style={styles.title}>All Items</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.count}>{allItems.length}</Text>
+        <Text style={[styles.title, { color: colors.DarkText }]}>{t.allItems}</Text>
+        <View style={[styles.countBadge, { backgroundColor: colors.CardBg }]}>
+          <Text style={[styles.count, { color: colors.PrimaryBlue }]}>{allItems.length}</Text>
         </View>
       </View>
 
@@ -79,17 +88,14 @@ export default function ItemsScreen() {
           onChangeText={() => {}}
           onFocus={() => navigation.navigate('Search')}
           editable={false}
-          placeholder="Search items..."
+          placeholder={t.searchPlaceholder}
         />
       </View>
 
       {allItems.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="list" size={48} color={Colors.Border} />
-          <Text style={styles.emptyTitle}>No items yet</Text>
-          <Text style={styles.emptyText}>
-            Add items to your shelves to see them here
-          </Text>
+          <Ionicons name="list" size={48} color={colors.Border} />
+          <Text style={[styles.emptyTitle, { color: colors.DarkText }]}>{t.noResults}</Text>
         </View>
       ) : (
         <FlatList
@@ -107,7 +113,6 @@ export default function ItemsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
   },
   titleRow: {
     flexDirection: 'row',
@@ -119,28 +124,24 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.xxl,
-    color: Colors.DarkText,
   },
   countBadge: {
     height: 28,
     minWidth: 28,
     paddingHorizontal: 10,
     borderRadius: 14,
-    backgroundColor: Colors.SecondaryWhite,
     justifyContent: 'center',
     alignItems: 'center',
   },
   count: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.sm,
-    color: Colors.PrimaryBlue,
   },
   list: {
     paddingHorizontal: Spacing.ScreenPadding,
     paddingBottom: 20,
   },
   card: {
-    backgroundColor: Colors.SecondaryWhite,
     borderRadius: Radius.Card,
     padding: 14,
     marginBottom: 10,
@@ -153,13 +154,11 @@ const styles = StyleSheet.create({
   itemName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.sizes.md,
-    color: Colors.DarkText,
     marginBottom: 2,
   },
   description: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
     marginBottom: 6,
   },
   meta: {
@@ -168,7 +167,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shelfTag: {
-    backgroundColor: Colors.Background,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
@@ -176,12 +174,10 @@ const styles = StyleSheet.create({
   shelfName: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.xs,
-    color: Colors.PrimaryBlue,
   },
   date: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.xs,
-    color: Colors.GrayText,
   },
   emptyState: {
     flex: 1,
@@ -192,15 +188,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.lg,
-    color: Colors.DarkText,
     marginTop: 14,
     marginBottom: 4,
-  },
-  emptyText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
-    textAlign: 'center',
-    paddingHorizontal: 40,
   },
 });
