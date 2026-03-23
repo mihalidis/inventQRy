@@ -4,10 +4,10 @@
     "slug": "InventQRy",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/inventqry-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/inventqry-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -15,19 +15,29 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "bunsoniumlab.Inventqry",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/inventqry-icon-adaptive.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "bunsoniumlab.Inventqry"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/inventqry-icon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7022e9bd-b1d1-44b4-a6d4-f05a377a980b"
+      }
+    }
   }
 }

@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList, BottomTabParamList, AuthStackParamList } from '../types/inventory';
 import { Typography } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +39,7 @@ const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inacti
 function MainTabs() {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -61,7 +63,8 @@ function MainTabs() {
           borderTopColor: colors.Border,
           borderTopWidth: 1,
           paddingTop: 6,
-          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          height: (Platform.OS === 'ios' ? 88 : 64) + (insets.bottom > 0 ? insets.bottom : 8),
           shadowColor: colors.DarkText,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.04,
