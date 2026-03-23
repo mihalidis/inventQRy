@@ -7,8 +7,8 @@
     "icon": "./assets/inventqry-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/inventqry-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/InventqrySplashScreen.png",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
@@ -23,13 +23,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/inventqry-icon-adaptive.png",
+        "foregroundImage": "./assets/inventqry512.png",
         "backgroundColor": "#ffffff"
       },
       "package": "bunsoniumlab.Inventqry"
     },
     "web": {
-      "favicon": "./assets/inventqry-icon.png"
+      "favicon": "./assets/inventqry512.png"
     },
     "plugins": [
       "expo-font"
