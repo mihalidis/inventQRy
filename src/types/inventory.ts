@@ -20,6 +20,7 @@ export interface Shelf {
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: { email?: string } | undefined;
 };
 
 export type RootStackParamList = {
@@ -31,6 +32,8 @@ export type RootStackParamList = {
   PrintQR: { shelfId: string };
   Profile: undefined;
   AppPreferences: undefined;
+  AccountSettings: undefined;
+  About: undefined;
 };
 
 export type BottomTabParamList = {

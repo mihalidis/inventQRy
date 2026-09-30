@@ -22,8 +22,11 @@ import SearchScreen from '../screens/SearchScreen';
 import PrintQRScreen from '../screens/PrintQRScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AppPreferencesScreen from '../screens/AppPreferencesScreen';
+import AccountSettingsScreen from '../screens/AccountSettingsScreen';
+import AboutScreen from '../screens/AboutScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -91,6 +94,7 @@ function AuthNavigator() {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </AuthStack.Navigator>
   );
 }
@@ -106,6 +110,8 @@ function AppStack() {
       <Stack.Screen name="PrintQR" component={PrintQRScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="AppPreferences" component={AppPreferencesScreen} />
+      <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
     </Stack.Navigator>
   );
 }

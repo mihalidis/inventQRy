@@ -71,7 +71,7 @@ export default function RegisterScreen({ navigation }: any) {
           <Text style={[styles.subtitle, { color: colors.GrayText }]}>{t.registerSubtitle}</Text>
 
           {error ? (
-            <View style={styles.errorContainer}>
+            <View style={[styles.errorContainer, { backgroundColor: colors.Danger + '1A' }]}>
               <Ionicons name="alert-circle" size={18} color={colors.Danger} />
               <Text style={[styles.errorText, { color: colors.Danger }]}>{error}</Text>
             </View>
@@ -214,7 +214,6 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
     borderRadius: Radius.Input,
     paddingHorizontal: 12,
     paddingVertical: 10,

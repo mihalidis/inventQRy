@@ -8,9 +8,13 @@ import {
   deleteShelfWithItems,
   addItem as addItemService,
   deleteItem as deleteItemService,
-  searchItemsByName,
-  findShelfByQR,
 } from '../services/firestore';
+import { track } from '../services/analytics';
+
+export interface SearchResult {
+  item: Item;
+  shelf: Shelf;
+}
 
 interface InventoryContextValue {
   shelves: Shelf[];
@@ -19,11 +23,13 @@ interface InventoryContextValue {
   addShelf: (name: string, location: string) => Promise<string>;
   removeShelf: (shelfId: string) => Promise<void>;
   getShelfById: (shelfId: string) => Shelf | undefined;
-  getShelfByQR: (qrCode: string) => Promise<Shelf | null>;
+  /** Yalnızca kullanıcının kendi rafları arasında arar (karar: yabancı raflar görünmez). */
+  getShelfByQR: (qrCode: string) => Shelf | undefined;
   getItemsForShelf: (shelfId: string) => Item[];
   addItemToShelf: (shelfId: string, name: string, description: string) => Promise<void>;
   removeItemFromShelf: (shelfId: string, itemId: string) => Promise<void>;
-  searchItems: (query: string) => Promise<Array<{ item: Item; shelf: Shelf }>>;
+  /** Yerel veri üzerinde ad ve açıklamada arar; sunucuya gitmez. */
+  searchItems: (query: string) => SearchResult[];
 }
 
 export const InventoryContext = createContext<InventoryContextValue | null>(null);
@@ -34,7 +40,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Real-time listeners
+  // Gerçek zamanlı dinleyiciler
   useEffect(() => {
     if (!user) {
       setShelves([]);
@@ -72,15 +78,18 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const addShelf = useCallback(
     async (name: string, location: string): Promise<string> => {
       if (!user) throw new Error('Not authenticated');
-      return createShelfService(user.uid, name, location);
+      const id = await createShelfService(user.uid, name, location);
+      track('shelf_created', { shelf_count: shelves.length + 1 });
+      return id;
     },
-    [user]
+    [user, shelves.length]
   );
 
   const removeShelf = useCallback(
     async (shelfId: string) => {
       if (!user) return;
       await deleteShelfWithItems(user.uid, shelfId);
+      track('shelf_deleted');
     },
     [user]
   );
@@ -91,13 +100,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   );
 
   const getShelfByQR = useCallback(
-    async (qrCode: string): Promise<Shelf | null> => {
-      // First check local state
-      const local = shelves.find((s) => s.qrCode === qrCode);
-      if (local) return local;
-      // Then check Firestore (could be another user's shelf)
-      return findShelfByQR(qrCode);
-    },
+    (qrCode: string) => shelves.find((s) => s.qrCode === qrCode),
     [shelves]
   );
 
@@ -110,6 +113,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     async (shelfId: string, name: string, description: string) => {
       if (!user) return;
       await addItemService(user.uid, shelfId, name, description);
+      track('item_added', { has_description: description.length > 0 });
     },
     [user]
   );
@@ -118,22 +122,31 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     async (shelfId: string, itemId: string) => {
       if (!user) return;
       await deleteItemService(shelfId, itemId);
+      track('item_removed');
     },
     [user]
   );
 
   const searchItems = useCallback(
-    async (q: string): Promise<Array<{ item: Item; shelf: Shelf }>> => {
-      if (!user || !q.trim()) return [];
-      const foundItems = await searchItemsByName(user.uid, q);
-      return foundItems
-        .map((item) => {
-          const shelf = shelves.find((s) => s.id === item.shelfId);
-          return shelf ? { item, shelf } : null;
-        })
-        .filter(Boolean) as Array<{ item: Item; shelf: Shelf }>;
+    (q: string): SearchResult[] => {
+      const lower = q.toLowerCase().trim();
+      if (!lower) return [];
+      const shelfMap = new Map(shelves.map((s) => [s.id, s]));
+      const results: SearchResult[] = [];
+      for (const item of items) {
+        const shelf = shelfMap.get(item.shelfId);
+        if (!shelf) continue;
+        if (
+          item.name.toLowerCase().includes(lower) ||
+          item.description.toLowerCase().includes(lower) ||
+          shelf.name.toLowerCase().includes(lower)
+        ) {
+          results.push({ item, shelf });
+        }
+      }
+      return results;
     },
-    [user, shelves]
+    [items, shelves]
   );
 
   const value = useMemo<InventoryContextValue>(

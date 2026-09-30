@@ -148,55 +148,21 @@ export function subscribeToItems(
   });
 }
 
-// ─── Search ───
+// ─── Account ───
 
-export async function searchItemsByName(
-  userId: string,
-  searchQuery: string
-): Promise<Item[]> {
-  // Firestore doesn't support full-text search, so we fetch all user items
-  // and filter client-side (fine for moderate datasets)
-  const q = query(
-    collection(db, 'items'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
-  const snapshot = await getDocs(q);
-  const lower = searchQuery.toLowerCase().trim();
-  if (!lower) return [];
+/** Kullanıcının tüm raflarını ve eşyalarını siler (hesap silme öncesi). */
+export async function deleteAllUserData(userId: string): Promise<void> {
+  const [shelvesSnap, itemsSnap] = await Promise.all([
+    getDocs(query(collection(db, 'shelves'), where('userId', '==', userId))),
+    getDocs(query(collection(db, 'items'), where('userId', '==', userId))),
+  ]);
+  const refs = [...shelvesSnap.docs, ...itemsSnap.docs].map((d) => d.ref);
 
-  return snapshot.docs
-    .map((d) => ({
-      id: d.id,
-      shelfId: d.data().shelfId,
-      userId: d.data().userId,
-      name: d.data().name,
-      description: d.data().description || '',
-      createdAt: d.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-    }))
-    .filter(
-      (item) =>
-        item.name.toLowerCase().includes(lower) ||
-        item.description.toLowerCase().includes(lower)
-    );
-}
-
-// ─── QR Lookup ───
-
-export async function findShelfByQR(qrCode: string): Promise<Shelf | null> {
-  const q = query(collection(db, 'shelves'), where('qrCode', '==', qrCode));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-
-  const d = snapshot.docs[0];
-  return {
-    id: d.id,
-    userId: d.data().userId,
-    name: d.data().name,
-    location: d.data().location,
-    qrCode: d.data().qrCode,
-    itemCount: d.data().itemCount || 0,
-    createdAt: d.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-  };
+  // Firestore batch sınırı 500 işlem
+  for (let i = 0; i < refs.length; i += 450) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + 450).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
 }
 

@@ -65,7 +65,7 @@ export default function LoginScreen({ navigation }: any) {
           <Text style={[styles.subtitle, { color: colors.GrayText }]}>{t.loginSubtitle}</Text>
 
           {error ? (
-            <View style={styles.errorContainer}>
+            <View style={[styles.errorContainer, { backgroundColor: colors.Danger + '1A' }]}>
               <Ionicons name="alert-circle" size={18} color={colors.Danger} />
               <Text style={[styles.errorText, { color: colors.Danger }]}>{error}</Text>
             </View>
@@ -116,6 +116,13 @@ export default function LoginScreen({ navigation }: any) {
             ) : (
               <Text style={styles.buttonText}>{t.login}</Text>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.forgotLink}
+            onPress={() => navigation.navigate('ForgotPassword', { email: email.trim() })}
+          >
+            <Text style={[styles.forgotText, { color: colors.PrimaryBlue }]}>{t.forgotPassword}</Text>
           </TouchableOpacity>
         </View>
 
@@ -175,7 +182,6 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
     borderRadius: Radius.Input,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -226,6 +232,15 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.lg,
     color: '#FFFFFF',
+  },
+  forgotLink: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 4,
+  },
+  forgotText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.sizes.sm,
   },
   registerLink: {
     alignItems: 'center',
