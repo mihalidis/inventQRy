@@ -1,14 +1,4 @@
-export const Colors = {
-  PrimaryBlue: '#4A7BF7',
-  SecondaryWhite: '#F5F7FA',
-  Background: '#FFFFFF',
-  DarkText: '#2A3342',
-  GrayText: '#8E9196',
-  SuccessGreen: '#6EE7B7',
-  Danger: '#EF4444',
-  Border: '#E8EBF0',
-  InputBg: '#F0F2F5',
-} as const;
+// Renkler ThemeContext'te tanımlı; her zaman useTheme().colors kullanın.
 
 export const Radius = {
   Card: 12,

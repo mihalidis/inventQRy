@@ -8,6 +8,7 @@ import SearchBar from '../components/SearchBar';
 import { useInventory } from '../hooks/useInventory';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { locales } from '../i18n/translations';
 import { RootStackParamList, Item, Shelf } from '../types/inventory';
 import { Radius, Spacing, Typography } from '../constants/theme';
 
@@ -38,10 +39,10 @@ export default function ItemsScreen() {
   }, [shelves, items]);
 
   const renderItem = ({ item: entry }: { item: FlatItem }) => {
-    const dateStr = new Date(entry.item.createdAt).toLocaleDateString(
-      language === 'tr' ? 'tr-TR' : 'en-US',
-      { day: 'numeric', month: 'short' }
-    );
+    const dateStr = new Date(entry.item.createdAt).toLocaleDateString(locales[language], {
+      day: 'numeric',
+      month: 'short',
+    });
 
     return (
       <TouchableOpacity
@@ -95,7 +96,8 @@ export default function ItemsScreen() {
       {allItems.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="list" size={48} color={colors.Border} />
-          <Text style={[styles.emptyTitle, { color: colors.DarkText }]}>{t.noResults}</Text>
+          <Text style={[styles.emptyTitle, { color: colors.DarkText }]}>{t.noItemsYet}</Text>
+          <Text style={[styles.emptyText, { color: colors.GrayText }]}>{t.noItemsYetDesc}</Text>
         </View>
       ) : (
         <FlatList
@@ -190,5 +192,10 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.lg,
     marginTop: 14,
     marginBottom: 4,
+  },
+  emptyText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
   },
 });

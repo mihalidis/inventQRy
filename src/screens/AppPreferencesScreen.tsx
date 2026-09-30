@@ -1,78 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
-  Alert,
-  Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
 import { Language } from '../i18n/translations';
 import { Radius, Spacing, Typography } from '../constants/theme';
-
-const NOTIF_STORAGE_KEY = '@inventqry_notifications';
 
 export default function AppPreferencesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { language, t, setLanguage } = useLanguage();
   const { mode, colors, setMode } = useTheme();
-  const { user } = useAuth();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(NOTIF_STORAGE_KEY).then((val) => {
-      setNotificationsEnabled(val === 'true');
-    });
-  }, []);
-
   const handleLanguageChange = async (lang: Language) => {
     await setLanguage(lang);
   };
 
   const handleThemeChange = async (themeMode: ThemeMode) => {
     await setMode(themeMode);
-  };
-
-  const handleNotificationToggle = async (value: boolean) => {
-    if (value) {
-      const { status: existing } = await Notifications.getPermissionsAsync();
-      let finalStatus = existing;
-
-      if (existing !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
-        Alert.alert(t.notifications, t.notificationPermDenied);
-        return;
-      }
-
-      setNotificationsEnabled(true);
-      await AsyncStorage.setItem(NOTIF_STORAGE_KEY, 'true');
-
-      try {
-        const tokenData = await Notifications.getExpoPushTokenAsync();
-        // Token could be saved to Firestore if configured
-        console.log('Push token:', tokenData.data);
-      } catch (err) {
-        console.log('Token error:', err);
-      }
-    } else {
-      setNotificationsEnabled(false);
-      await AsyncStorage.setItem(NOTIF_STORAGE_KEY, 'false');
-    }
   };
 
   const languageOptions: { key: Language; label: string }[] = [
@@ -155,26 +107,6 @@ export default function AppPreferencesScreen() {
           ))}
         </View>
 
-        {/* Notifications Section */}
-        <Text style={[styles.sectionTitle, { color: colors.DarkText }]}>{t.notifications}</Text>
-        <Text style={[styles.sectionDesc, { color: colors.GrayText }]}>{t.notificationsDesc}</Text>
-        <View style={[styles.optionCard, { backgroundColor: colors.CardBg }]}>
-          <View style={styles.switchRow}>
-            <View style={[styles.optionIconBox, { backgroundColor: colors.Background }]}>
-              <Ionicons name="notifications-outline" size={20} color={colors.PrimaryBlue} />
-            </View>
-            <View style={styles.switchTextContainer}>
-              <Text style={[styles.optionLabel, { color: colors.DarkText }]}>{t.pushNotifications}</Text>
-              <Text style={[styles.switchDesc, { color: colors.GrayText }]}>{t.pushNotificationsDesc}</Text>
-            </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={handleNotificationToggle}
-              trackColor={{ false: colors.Border, true: colors.PrimaryBlue }}
-              thumbColor={Platform.OS === 'android' ? '#FFFFFF' : undefined}
-            />
-          </View>
-        </View>
       </ScrollView>
     </View>
   );

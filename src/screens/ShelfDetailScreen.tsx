@@ -16,8 +16,11 @@ import Header from '../components/Header';
 import ItemCard from '../components/ItemCard';
 import AddItemModal from '../components/AddItemModal';
 import { useInventory } from '../hooks/useInventory';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
+import { format } from '../i18n/translations';
 import { RootStackParamList, Item } from '../types/inventory';
-import { Colors, Radius, Spacing, Typography } from '../constants/theme';
+import { Radius, Spacing, Typography } from '../constants/theme';
 
 type ScreenRoute = RouteProp<RootStackParamList, 'ShelfDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -26,6 +29,8 @@ export default function ShelfDetailScreen() {
   const route = useRoute<ScreenRoute>();
   const navigation = useNavigation<NavigationProp>();
   const { getShelfById, getItemsForShelf, addItemToShelf, removeItemFromShelf, loading } = useInventory();
+  const { t } = useLanguage();
+  const { colors } = useTheme();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const shelf = getShelfById(route.params.shelfId);
@@ -37,16 +42,12 @@ export default function ShelfDetailScreen() {
   const handleDeleteItem = useCallback(
     (itemId: string) => {
       if (!shelf) return;
-      Alert.alert('Remove Item', 'Are you sure you want to remove this item?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => removeItemFromShelf(shelf.id, itemId),
-        },
+      Alert.alert(t.removeItemTitle, t.removeItemMessage, [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.remove, style: 'destructive', onPress: () => removeItemFromShelf(shelf.id, itemId) },
       ]);
     },
-    [shelf, removeItemFromShelf]
+    [shelf, removeItemFromShelf, t]
   );
 
   const handleAddItem = useCallback(
@@ -57,24 +58,27 @@ export default function ShelfDetailScreen() {
         setShowAddModal(false);
       } catch (e) {
         console.error('addItem error:', e);
-        Alert.alert('Error', 'Failed to add item.');
+        Alert.alert(t.error, t.addItemFailed);
       }
     },
-    [shelf, addItemToShelf]
+    [shelf, addItemToShelf, t]
   );
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={Colors.PrimaryBlue} />
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.Background }]}>
+        <ActivityIndicator size="large" color={colors.PrimaryBlue} />
       </View>
     );
   }
 
   if (!shelf) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.notFoundText}>Shelf not found</Text>
+      <View style={[styles.container, { backgroundColor: colors.Background }]}>
+        <Header showBack onBack={() => navigation.goBack()} />
+        <View style={[styles.container, styles.centered]}>
+          <Text style={[styles.notFoundText, { color: colors.GrayText }]}>{t.shelfNotFound}</Text>
+        </View>
       </View>
     );
   }
@@ -85,75 +89,65 @@ export default function ShelfDetailScreen() {
 
   const ListHeader = () => (
     <View>
-      <View style={styles.infoCard}>
+      <View style={[styles.infoCard, { backgroundColor: colors.CardBg }]}>
         <View style={styles.infoTop}>
-          <View style={styles.shelfIconContainer}>
-            <MaterialCommunityIcons
-              name="package-variant-closed"
-              size={28}
-              color={Colors.PrimaryBlue}
-            />
+          <View style={[styles.shelfIconContainer, { backgroundColor: colors.Background }]}>
+            <MaterialCommunityIcons name="package-variant-closed" size={28} color={colors.PrimaryBlue} />
           </View>
           <View style={styles.infoDetails}>
-            <Text style={styles.shelfName}>{shelf.name}</Text>
-            <Text style={styles.shelfLocation}>{shelf.location}</Text>
+            <Text style={[styles.shelfName, { color: colors.DarkText }]}>{shelf.name}</Text>
+            <Text style={[styles.shelfLocation, { color: colors.GrayText }]}>{shelf.location}</Text>
           </View>
         </View>
 
+        {/* QR her temada beyaz zeminde kalır; ekrandan doğrudan taranabilsin */}
         <View style={styles.qrPreview}>
-          <QRCode
-            value={shelf.qrCode}
-            size={80}
-            color={Colors.DarkText}
-            backgroundColor={Colors.Background}
-          />
+          <QRCode value={shelf.qrCode} size={80} color="#000000" backgroundColor="#FFFFFF" />
         </View>
 
         <View style={styles.actionRow}>
           <TouchableOpacity
-            style={styles.printQRBtn}
+            style={[styles.actionBtn, styles.secondaryBtn, { borderColor: colors.PrimaryBlue }]}
             onPress={() => navigation.navigate('PrintQR', { shelfId: shelf.id })}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="qrcode" size={18} color={Colors.Background} />
-            <Text style={styles.printQRText}>Print QR</Text>
+            <MaterialCommunityIcons name="qrcode" size={18} color={colors.PrimaryBlue} />
+            <Text style={[styles.actionText, { color: colors.PrimaryBlue }]}>{t.printQR}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.addItemBtn}
+            style={[styles.actionBtn, { backgroundColor: colors.PrimaryBlue }]}
             onPress={() => setShowAddModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={18} color={Colors.Background} />
-            <Text style={styles.addItemText}>Add Item</Text>
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+            <Text style={[styles.actionText, { color: '#FFFFFF' }]}>{t.addItem}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.itemsHeader}>
-        <Text style={styles.itemsTitle}>Items ({shelfItems.length})</Text>
+        <Text style={[styles.itemsTitle, { color: colors.DarkText }]}>
+          {format(t.itemsHeader, { count: shelfItems.length })}
+        </Text>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <Header
-        showBack
-        title={shelf.name}
-        onBack={() => navigation.goBack()}
-      />
+    <View style={[styles.container, { backgroundColor: colors.Background }]}>
+      <Header showBack title={shelf.name} onBack={() => navigation.goBack()} />
 
       {shelfItems.length === 0 ? (
         <View style={styles.container}>
           <ListHeader />
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No items on this shelf yet</Text>
+            <Text style={[styles.emptyText, { color: colors.GrayText }]}>{t.noItemsOnShelf}</Text>
             <TouchableOpacity
-              style={styles.emptyAddBtn}
+              style={[styles.emptyAddBtn, { backgroundColor: colors.PrimaryBlue }]}
               onPress={() => setShowAddModal(true)}
             >
-              <Ionicons name="add" size={18} color={Colors.Background} />
-              <Text style={styles.emptyAddText}>Add First Item</Text>
+              <Ionicons name="add" size={18} color="#FFFFFF" />
+              <Text style={styles.emptyAddText}>{t.addFirstItem}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -181,7 +175,6 @@ export default function ShelfDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
   },
   centered: {
     justifyContent: 'center',
@@ -190,10 +183,8 @@ const styles = StyleSheet.create({
   notFoundText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.md,
-    color: Colors.GrayText,
   },
   infoCard: {
-    backgroundColor: Colors.SecondaryWhite,
     margin: Spacing.ScreenPadding,
     marginBottom: 12,
     borderRadius: Radius.Card,
@@ -208,7 +199,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: Colors.Background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -219,54 +209,38 @@ const styles = StyleSheet.create({
   shelfName: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.lg,
-    color: Colors.DarkText,
     marginBottom: 2,
   },
   shelfLocation: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
   },
   qrPreview: {
     alignItems: 'center',
     paddingVertical: 12,
     marginBottom: 14,
-    backgroundColor: Colors.Background,
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.Card,
   },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
   },
-  printQRBtn: {
+  actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 42,
     borderRadius: Radius.Button,
-    backgroundColor: Colors.PrimaryBlue,
     gap: 6,
   },
-  printQRText: {
+  secondaryBtn: {
+    borderWidth: 1.5,
+  },
+  actionText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.sizes.sm,
-    color: Colors.Background,
-  },
-  addItemBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 42,
-    borderRadius: Radius.Button,
-    backgroundColor: Colors.PrimaryBlue,
-    gap: 6,
-  },
-  addItemText: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.sizes.sm,
-    color: Colors.Background,
   },
   itemsHeader: {
     flexDirection: 'row',
@@ -278,7 +252,6 @@ const styles = StyleSheet.create({
   itemsTitle: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.sizes.md,
-    color: Colors.DarkText,
   },
   list: {
     paddingBottom: 20,
@@ -293,7 +266,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
     marginBottom: 16,
   },
   emptyAddBtn: {
@@ -302,12 +274,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: Radius.Button,
-    backgroundColor: Colors.PrimaryBlue,
     gap: 6,
   },
   emptyAddText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.sizes.sm,
-    color: Colors.Background,
+    color: '#FFFFFF',
   },
 });

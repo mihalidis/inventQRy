@@ -15,6 +15,7 @@ import ShelfCard from '../components/ShelfCard';
 import { useInventory } from '../hooks/useInventory';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { format } from '../i18n/translations';
 import { RootStackParamList, Shelf } from '../types/inventory';
 import { Radius, Spacing, Typography } from '../constants/theme';
 
@@ -33,20 +34,12 @@ export default function ShelvesScreen() {
 
   const handleDeleteShelf = useCallback(
     (shelf: Shelf) => {
-      Alert.alert(
-        'Rafı Sil',
-        `"${shelf.name}" rafını ve içindeki tüm eşyaları silmek istediğinize emin misiniz?`,
-        [
-          { text: 'İptal', style: 'cancel' },
-          {
-            text: 'Sil',
-            style: 'destructive',
-            onPress: () => removeShelf(shelf.id),
-          },
-        ]
-      );
+      Alert.alert(t.deleteShelfTitle, format(t.deleteShelfMessage, { name: shelf.name }), [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.delete, style: 'destructive', onPress: () => removeShelf(shelf.id) },
+      ]);
     },
-    [removeShelf]
+    [removeShelf, t]
   );
 
   const renderShelf = useCallback(
@@ -68,7 +61,7 @@ export default function ShelvesScreen() {
           activeOpacity={0.7}
         >
           <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.addBtnText}>{t.newShelf.replace('+ ', '')}</Text>
+          <Text style={styles.addBtnText}>{t.newShelf}</Text>
         </TouchableOpacity>
       </View>
 

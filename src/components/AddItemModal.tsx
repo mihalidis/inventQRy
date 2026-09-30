@@ -11,7 +11,10 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '../constants/theme';
+import { Radius, Spacing, Typography } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { format } from '../i18n/translations';
 
 interface AddItemModalProps {
   visible: boolean;
@@ -21,6 +24,8 @@ interface AddItemModalProps {
 }
 
 export default function AddItemModal({ visible, shelfName, onClose, onAdd }: AddItemModalProps) {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -46,37 +51,40 @@ export default function AddItemModal({ visible, shelfName, onClose, onAdd }: Add
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={styles.sheetWrapper}
             >
-              <View style={styles.sheet}>
-                <View style={styles.handle} />
-                <Text style={styles.title}>Eşya Ekle: {shelfName}</Text>
+              <View style={[styles.sheet, { backgroundColor: colors.Background }]}>
+                <View style={[styles.handle, { backgroundColor: colors.Border }]} />
+                <Text style={[styles.title, { color: colors.DarkText }]}>
+                  {format(t.addItemTo, { shelf: shelfName })}
+                </Text>
 
-                <Text style={styles.label}>Item Name</Text>
+                <Text style={[styles.label, { color: colors.DarkText }]}>{t.itemName}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.InputBg, color: colors.DarkText }]}
                   value={name}
                   onChangeText={setName}
-                  placeholder="Item name"
-                  placeholderTextColor={Colors.GrayText}
+                  placeholder={t.itemNamePlaceholder}
+                  placeholderTextColor={colors.GrayText}
+                  autoFocus
                 />
 
-                <Text style={styles.label}>Description</Text>
+                <Text style={[styles.label, { color: colors.DarkText }]}>{t.description}</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[styles.input, styles.textArea, { backgroundColor: colors.InputBg, color: colors.DarkText }]}
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Description (optional)"
-                  placeholderTextColor={Colors.GrayText}
+                  placeholder={t.descriptionPlaceholder}
+                  placeholderTextColor={colors.GrayText}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
                 />
 
                 <TouchableOpacity
-                  style={[styles.addBtn, !name.trim() && styles.addBtnDisabled]}
+                  style={[styles.addBtn, { backgroundColor: colors.PrimaryBlue }, !name.trim() && styles.addBtnDisabled]}
                   onPress={handleAdd}
                   disabled={!name.trim()}
                 >
-                  <Text style={styles.addBtnText}>Ekle</Text>
+                  <Text style={styles.addBtnText}>{t.add}</Text>
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>
@@ -97,7 +105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: Colors.Background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: Spacing.ScreenPadding,
@@ -108,37 +115,31 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.Border,
     alignSelf: 'center',
     marginBottom: 16,
   },
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.lg,
-    color: Colors.DarkText,
     marginBottom: 16,
   },
   label: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.sm,
-    color: Colors.DarkText,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: Colors.InputBg,
     borderRadius: Radius.Input,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.md,
-    color: Colors.DarkText,
     marginBottom: 14,
   },
   textArea: {
     minHeight: 80,
   },
   addBtn: {
-    backgroundColor: Colors.PrimaryBlue,
     borderRadius: Radius.Button,
     paddingVertical: 14,
     alignItems: 'center',
@@ -150,6 +151,6 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.md,
-    color: Colors.Background,
+    color: '#FFFFFF',
   },
 });

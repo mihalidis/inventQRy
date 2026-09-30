@@ -12,6 +12,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
 import { useInventory } from '../hooks/useInventory';
 import { useLanguage } from '../context/LanguageContext';
@@ -55,6 +56,7 @@ export default function ProfileScreen() {
       iconFamily: 'Ionicons',
       label: t.accountSettings,
       subtitle: t.accountSettingsDesc,
+      onPress: () => navigation.navigate('AccountSettings'),
     },
     {
       icon: 'cog-outline',
@@ -68,6 +70,7 @@ export default function ProfileScreen() {
       iconFamily: 'MaterialCommunityIcons',
       label: t.about,
       subtitle: t.aboutDesc,
+      onPress: () => navigation.navigate('About'),
     },
   ];
 
@@ -155,8 +158,10 @@ export default function ProfileScreen() {
             style={styles.appIcon}
             resizeMode="contain"
           />
-          <Text style={[styles.appName, { color: colors.DarkText }]}>InventQRy</Text>
-          <Text style={[styles.appVersion, { color: colors.GrayText }]}>{t.version} 1.0.0</Text>
+          <Text style={[styles.appName, { color: colors.DarkText }]}>{t.appName}</Text>
+          <Text style={[styles.appVersion, { color: colors.GrayText }]}>
+            {t.version} {Constants.expoConfig?.version ?? ''}
+          </Text>
         </View>
 
         {/* Logout Button */}

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,6 +18,7 @@ import ShelfCard from '../components/ShelfCard';
 import { useInventory } from '../hooks/useInventory';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { format } from '../i18n/translations';
 import { RootStackParamList, Shelf } from '../types/inventory';
 import { Radius, Spacing, Typography } from '../constants/theme';
 
@@ -24,7 +26,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { shelves, removeShelf } = useInventory();
+  const { shelves, removeShelf, loading } = useInventory();
   const { t } = useLanguage();
   const { colors } = useTheme();
 
@@ -35,20 +37,12 @@ export default function HomeScreen() {
 
   const handleDeleteShelf = useCallback(
     (shelf: Shelf) => {
-      Alert.alert(
-        'Rafı Sil',
-        `"${shelf.name}" rafını ve içindeki tüm eşyaları silmek istediğinize emin misiniz?`,
-        [
-          { text: 'İptal', style: 'cancel' },
-          {
-            text: 'Sil',
-            style: 'destructive',
-            onPress: () => removeShelf(shelf.id),
-          },
-        ]
-      );
+      Alert.alert(t.deleteShelfTitle, format(t.deleteShelfMessage, { name: shelf.name }), [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.delete, style: 'destructive', onPress: () => removeShelf(shelf.id) },
+      ]);
     },
-    [removeShelf]
+    [removeShelf, t]
   );
 
   const renderShelf = useCallback(
@@ -91,7 +85,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.DarkText }]}>{t.yourShelves}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('AddShelf')}>
-            <Text style={[styles.addText, { color: colors.PrimaryBlue }]}>{t.add}</Text>
+            <Text style={[styles.addText, { color: colors.PrimaryBlue }]}>{t.addShort}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -102,7 +96,15 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: colors.Background }]}>
       <Header showLogo showProfile onProfile={() => navigation.navigate('Profile')} />
 
-      {shelves.length === 0 ? (
+      {loading ? (
+        // Veri gelmeden "Henüz raf yok" gösterip sonra listeye atlamamak için
+        <View style={styles.container}>
+          <ListHeader />
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={colors.PrimaryBlue} />
+          </View>
+        </View>
+      ) : shelves.length === 0 ? (
         <View style={[styles.container, { backgroundColor: colors.Background }]}>
           <ListHeader />
           <View style={styles.emptyState}>
