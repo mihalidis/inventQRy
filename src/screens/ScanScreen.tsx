@@ -1,110 +1,117 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import ScanFrame from '../components/ScanFrame';
 import { useInventory } from '../hooks/useInventory';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { RootStackParamList } from '../types/inventory';
 import { parseQRValue, generateQRValue } from '../utils/qr';
-import { Colors, Typography } from '../constants/theme';
+import { track } from '../services/analytics';
+import { Radius, Typography } from '../constants/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { getShelfByQR } = useInventory();
+  const isFocused = useIsFocused();
+  const { getShelfByQR, loading } = useInventory();
+  const { t } = useLanguage();
+  const { colors } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [searching, setSearching] = useState(false);
+  const [torch, setTorch] = useState(false);
 
   useEffect(() => {
-    if (!permission?.granted) {
+    if (permission && !permission.granted && permission.canAskAgain) {
       requestPermission();
     }
   }, [permission, requestPermission]);
 
+  // Sekmeden çıkınca el fenerini kapat
+  useEffect(() => {
+    if (!isFocused) setTorch(false);
+  }, [isFocused]);
+
+  const resetAfter = (ms: number) => setTimeout(() => setScanned(false), ms);
+
   const handleBarcodeScanned = useCallback(
-    async (result: BarcodeScanningResult) => {
-      if (scanned || searching) return;
+    (result: BarcodeScanningResult) => {
+      if (scanned || loading) return;
       setScanned(true);
-      setSearching(true);
 
-      try {
-        const data = result.data;
-        const qrValue = data.startsWith('inventqry://') ? data : generateQRValue(data);
-        const shelf = await getShelfByQR(qrValue);
+      const data = result.data;
+      const qrValue = data.startsWith('inventqry://') ? data : generateQRValue(data);
+      const shelfId = parseQRValue(qrValue);
 
-        if (shelf) {
-          navigation.navigate('ShelfDetail', { shelfId: shelf.id });
-        } else {
-          const shelfId = parseQRValue(qrValue);
-          if (shelfId) {
-            Alert.alert(
-              'QR Detected',
-              'This shelf is not registered yet. Would you like to create it?',
-              [
-                { text: 'Cancel', style: 'cancel', onPress: () => setScanned(false) },
-                {
-                  text: 'Create Shelf',
-                  onPress: () => navigation.navigate('AddShelf'),
-                },
-              ]
-            );
-          } else {
-            Alert.alert('Invalid QR', 'This QR code is not an InventQRy code.', [
-              { text: 'OK', onPress: () => setScanned(false) },
-            ]);
-          }
-        }
-      } catch {
-        Alert.alert('Error', 'Failed to look up QR code.', [
-          { text: 'OK', onPress: () => setScanned(false) },
-        ]);
-      } finally {
-        setSearching(false);
-        setTimeout(() => setScanned(false), 3000);
+      if (!shelfId) {
+        Alert.alert(t.invalidQRTitle, t.invalidQRDesc, [{ text: t.ok, onPress: () => setScanned(false) }]);
+        return;
       }
+
+      const shelf = getShelfByQR(qrValue);
+      if (shelf) {
+        track('qr_scanned');
+        navigation.navigate('ShelfDetail', { shelfId: shelf.id });
+        resetAfter(1500);
+        return;
+      }
+
+      // Karar: kullanıcı yalnızca kendi raflarını görebilir; yabancı/silinmiş QR tek mesajla geçilir
+      track('qr_scan_not_found');
+      Alert.alert(t.qrNotYoursTitle, t.qrNotYoursDesc, [{ text: t.ok, onPress: () => setScanned(false) }]);
     },
-    [scanned, searching, getShelfByQR, navigation]
+    [scanned, loading, getShelfByQR, navigation, t]
   );
 
   if (!permission) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.statusText}>Requesting camera permission...</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.Background }]}>
+        <ActivityIndicator color={colors.PrimaryBlue} />
+        <Text style={[styles.statusText, { color: colors.GrayText }]}>{t.requestingCamera}</Text>
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <MaterialCommunityIcons name="camera-off" size={48} color={Colors.GrayText} />
-        <Text style={styles.statusText}>Camera permission denied</Text>
-        <Text style={styles.subText}>Please enable camera access in Settings</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.Background }]}>
+        <MaterialCommunityIcons name="camera-off" size={48} color={colors.GrayText} />
+        <Text style={[styles.statusText, { color: colors.DarkText }]}>{t.cameraDenied}</Text>
+        <Text style={[styles.subText, { color: colors.GrayText }]}>{t.cameraDeniedDesc}</Text>
+        <TouchableOpacity
+          style={[styles.settingsBtn, { backgroundColor: colors.PrimaryBlue }]}
+          onPress={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.settingsBtnText}>{t.openSettings}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={StyleSheet.absoluteFillObject}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-      />
+      {/* Kamera yalnızca sekme görünürken çalışır; pil ve gizlilik için */}
+      {isFocused && (
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          facing="back"
+          enableTorch={torch}
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+        />
+      )}
 
       <View style={styles.overlay}>
         <View style={[styles.overlayTop, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.title}>Scan QR</Text>
-          <Text style={styles.subtitle}>
-            Point your camera at a shelf QR code
-          </Text>
+          <Text style={styles.title}>{t.scanTitle}</Text>
+          <Text style={styles.subtitle}>{t.scanSubtitle}</Text>
         </View>
 
         <View style={styles.frameRow}>
@@ -115,15 +122,24 @@ export default function ScanScreen() {
 
         <View style={styles.overlayBottom}>
           <View style={styles.statusBadge}>
-            {searching ? (
-              <ActivityIndicator size="small" color={Colors.PrimaryBlue} />
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.PrimaryBlue} />
             ) : (
-              <MaterialCommunityIcons name="qrcode-scan" size={18} color={Colors.PrimaryBlue} />
+              <MaterialCommunityIcons name="qrcode-scan" size={18} color={colors.PrimaryBlue} />
             )}
             <Text style={styles.scanningText}>
-              {searching ? 'Looking up...' : scanned ? 'QR Detected!' : 'Scanning...'}
+              {loading ? t.lookingUp : scanned ? t.qrDetected : t.scanning}
             </Text>
           </View>
+
+          <TouchableOpacity
+            style={[styles.torchBtn, torch && { backgroundColor: colors.PrimaryBlue }]}
+            onPress={() => setTorch((v) => !v)}
+            accessibilityLabel={t.torch}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={torch ? 'flashlight' : 'flashlight-outline'} size={22} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -138,19 +154,30 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.Background,
+    paddingHorizontal: 32,
   },
   statusText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.md,
-    color: Colors.GrayText,
     marginTop: 12,
+    textAlign: 'center',
   },
   subText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.sizes.sm,
-    color: Colors.GrayText,
     marginTop: 4,
+    textAlign: 'center',
+  },
+  settingsBtn: {
+    marginTop: 20,
+    borderRadius: Radius.Button,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  settingsBtnText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.sizes.sm,
+    color: '#FFFFFF',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -164,7 +191,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.sizes.xxl,
-    color: Colors.Background,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitle: {
@@ -186,11 +213,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 32,
     paddingBottom: 120,
+    gap: 16,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.Background,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -199,6 +227,14 @@ const styles = StyleSheet.create({
   scanningText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.sizes.sm,
-    color: Colors.DarkText,
+    color: '#2A3342',
+  },
+  torchBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
