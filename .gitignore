@@ -35,4 +35,5 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-*.claude
+# Claude Code: kişisel ayarlar hariç, skills ve paylaşılan ayarlar repoya girer
+.claude/settings.local.json

@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// InventQRy Firestore güvenlik kuralları
+//
+// Karar (docs/ROADMAP.md §5): Kullanıcı yalnızca kendi raflarını ve eşyalarını
+// okuyabilir/yazabilir. Başkasının QR'ı taranırsa istemci "raf bulunamadı" gösterir.
+// Faz 2'de paylaşılan alanlar gelince bu kurallar spaceId üzerinden genişletilecek.
+//
+// Dağıtım: firebase deploy --only firestore:rules
+// (Firebase CLI kurulu değilse: Firebase Console → Firestore → Rules sekmesine yapıştır)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return signedIn() && data.userId == request.auth.uid;
+    }
+
+    function isString(value, maxLen) {
+      return value is string && value.size() <= maxLen;
+    }
+
+    match /shelves/{shelfId} {
+      allow read: if isOwner(resource.data);
+
+      allow create: if isOwner(request.resource.data)
+        && isString(request.resource.data.name, 100)
+        && isString(request.resource.data.location, 100)
+        && request.resource.data.itemCount == 0;
+
+      // userId değiştirilemez; itemCount ve qrCode istemci tarafından güncellenebilir
+      allow update: if isOwner(resource.data)
+        && request.resource.data.userId == resource.data.userId
+        && isString(request.resource.data.name, 100)
+        && isString(request.resource.data.location, 100)
+        && request.resource.data.itemCount is int
+        && request.resource.data.itemCount >= 0;
+
+      allow delete: if isOwner(resource.data);
+    }
+
+    match /items/{itemId} {
+      allow read: if isOwner(resource.data);
+
+      allow create: if isOwner(request.resource.data)
+        && isString(request.resource.data.name, 100)
+        && isString(request.resource.data.description, 500)
+        && request.resource.data.shelfId is string;
+
+      allow update: if isOwner(resource.data)
+        && request.resource.data.userId == resource.data.userId
+        && isString(request.resource.data.name, 100)
+        && isString(request.resource.data.description, 500);
+
+      allow delete: if isOwner(resource.data);
+    }
+
+    // Diğer tüm koleksiyonlar kapalı
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
