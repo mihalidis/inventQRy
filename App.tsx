@@ -9,10 +9,12 @@ import { InventoryProvider } from './src/context/InventoryContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import { initAnalytics, wrapRoot } from './src/services/analytics';
 
 SplashScreen.preventAutoHideAsync().then();
+initAnalytics();
 
-export default function App() {
+function App() {
   const [fontsLoaded] = useFonts({
     'SometypeMono-Regular': require('./assets/fonts/SometypeMono-Regular.ttf'),
     'SometypeMono-Medium': require('./assets/fonts/SometypeMono-Medium.ttf'),
@@ -47,3 +49,5 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+export default wrapRoot(App);

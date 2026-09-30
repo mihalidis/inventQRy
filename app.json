@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/inventqry-icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/InventqrySplashScreen.png",
       "resizeMode": "cover",
@@ -32,7 +32,9 @@
       "favicon": "./assets/inventqry512.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "@sentry/react-native",
+      "expo-localization"
     ],
     "extra": {
       "eas": {
