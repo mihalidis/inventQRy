@@ -37,3 +37,7 @@ yarn-error.*
 
 # Claude Code: kişisel ayarlar hariç, skills ve paylaşılan ayarlar repoya girer
 .claude/settings.local.json
+
+# Native projeler: `expo run:*` / prebuild ile app.json'dan üretilir, EAS her build'de yeniden oluşturur
+ios/
+android/
